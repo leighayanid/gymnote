@@ -157,7 +157,8 @@
 import { gsap } from 'gsap'
 
 definePageMeta({
-  layout: false
+  layout: false,
+  middleware: 'auth'
 })
 
 const { markWelcomeSeen } = useAuth()
@@ -234,7 +235,7 @@ const goToSlide = (index: number) => {
 
 const getStarted = async () => {
   markWelcomeSeen()
-  await router.push('/')
+  await router.push('/dashboard')
 }
 
 onMounted(() => {

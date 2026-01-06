@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
-  layout: 'default'
+  layout: 'default',
+  middleware: 'auth'
 })
 
 import {
@@ -91,7 +92,7 @@ onMounted(async () => {
       </div>
       <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No workouts yet</h3>
       <p class="text-gray-600 dark:text-gray-400 mb-6">Start your first workout to see it here</p>
-      <NuxtLink to="/">
+      <NuxtLink to="/dashboard">
         <UiButton variant="primary" :icon="PlusCircleIcon">
           Create Workout
         </UiButton>

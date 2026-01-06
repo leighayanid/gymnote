@@ -160,7 +160,7 @@ const isMobile = ref(true)
 const sidebar = ref<HTMLElement>()
 
 const navItems = [
-  { label: 'Today', icon: HomeIcon, to: '/' },
+  { label: 'Today', icon: HomeIcon, to: '/dashboard' },
   { label: 'History', icon: ClockIcon, to: '/history' },
   { label: 'Settings', icon: Cog6ToothIcon, to: '/settings' }
 ]
