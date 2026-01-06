@@ -14,7 +14,7 @@ export default defineNuxtConfig({
       name: 'Gymnote - Offline Workout Tracker',
       short_name: 'Gymnote',
       description: 'Simple offline-first workout tracking app',
-      theme_color: '#ffffff',
+      theme_color: '#6f58c9',
       background_color: '#ffffff',
       display: 'standalone',
       icons: [

@@ -1,141 +1,299 @@
 <template>
-  <div class="max-w-screen-xl mx-auto px-4 py-6">
-    <h1 class="text-3xl font-bold text-gray-900 mb-6">Settings</h1>
+  <div class="max-w-screen-xl mx-auto px-4 py-6 space-y-6">
+    <!-- Page Header -->
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+        <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
+          <Cog6ToothIcon class="w-6 h-6 text-white" />
+        </div>
+        Settings
+      </h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2 ml-13">Manage your preferences</p>
+    </div>
 
-    <!-- Sync Section -->
-    <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-      <h2 class="text-xl font-semibold text-gray-900 mb-4">Sync</h2>
+    <!-- Appearance Section -->
+    <UiCard>
+      <template #header>
+        <div class="flex items-center gap-2">
+          <PaintBrushIcon class="w-5 h-5 text-primary-500" />
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Appearance</h2>
+        </div>
+      </template>
 
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div>
-            <div class="font-medium text-gray-900">Connection Status</div>
-            <div class="text-sm text-gray-600">
-              {{ isOnline ? 'Online' : 'Offline' }}
+            <div class="font-medium text-gray-900 dark:text-white">Theme</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              Choose your preferred theme
+            </div>
+          </div>
+          <button
+            @click="toggleTheme"
+            class="relative inline-flex h-11 w-20 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+            :class="[
+              colorMode === 'dark' ? 'bg-primary-600' : 'bg-gray-300'
+            ]"
+          >
+            <span class="sr-only">Toggle theme</span>
+            <span
+              class="inline-block h-9 w-9 transform rounded-full bg-white shadow-lg transition-transform flex items-center justify-center"
+              :class="[
+                colorMode === 'dark' ? 'translate-x-10' : 'translate-x-1'
+              ]"
+            >
+              <MoonIcon v-if="colorMode === 'dark'" class="w-5 h-5 text-primary-600" />
+              <SunIcon v-else class="w-5 h-5 text-gray-600" />
+            </span>
+          </button>
+        </div>
+      </div>
+    </UiCard>
+
+    <!-- Sync Section -->
+    <UiCard>
+      <template #header>
+        <div class="flex items-center gap-2">
+          <ArrowPathIcon class="w-5 h-5 text-primary-500" />
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Sync</h2>
+        </div>
+      </template>
+
+      <div class="space-y-4">
+        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-full flex items-center justify-center"
+              :class="[isOnline ? 'bg-green-100 dark:bg-green-950' : 'bg-gray-200 dark:bg-gray-700']"
+            >
+              <WifiIcon
+                class="w-5 h-5"
+                :class="[isOnline ? 'text-green-600 dark:text-green-400' : 'text-gray-400']"
+              />
+            </div>
+            <div>
+              <div class="font-medium text-gray-900 dark:text-white">Connection Status</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">
+                {{ isOnline ? 'Online' : 'Offline' }}
+              </div>
             </div>
           </div>
           <div
-            class="w-3 h-3 rounded-full"
+            class="w-3 h-3 rounded-full animate-pulse"
             :class="[isOnline ? 'bg-green-500' : 'bg-gray-400']"
           ></div>
         </div>
 
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="font-medium text-gray-900">Last Sync</div>
-            <div class="text-sm text-gray-600">
-              {{ lastSyncText }}
+        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+              <ClockIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </div>
+            <div>
+              <div class="font-medium text-gray-900 dark:text-white">Last Sync</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">
+                {{ lastSyncText }}
+              </div>
             </div>
           </div>
         </div>
 
-        <button
+        <UiButton
           @click="handleManualSync"
           :disabled="syncing || !isOnline"
-          class="w-full bg-blue-600 text-white rounded-lg py-3 px-4 font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          :loading="syncing"
+          variant="primary"
+          size="lg"
+          full-width
+          :icon="ArrowPathIcon"
         >
           {{ syncing ? 'Syncing...' : 'Sync Now' }}
-        </button>
+        </UiButton>
       </div>
-    </div>
+    </UiCard>
 
     <!-- Storage Section -->
-    <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-      <h2 class="text-xl font-semibold text-gray-900 mb-4">Storage</h2>
+    <UiCard>
+      <template #header>
+        <div class="flex items-center gap-2">
+          <CircleStackIcon class="w-5 h-5 text-primary-500" />
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Storage</h2>
+        </div>
+      </template>
 
-      <div class="space-y-3 text-sm">
-        <div class="flex justify-between">
-          <span class="text-gray-600">Total Workouts</span>
-          <span class="font-medium text-gray-900">{{ workouts.length }}</span>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <RectangleStackIcon class="w-5 h-5" />
+            <span>Total Workouts</span>
+          </div>
+          <span class="font-semibold text-gray-900 dark:text-white text-lg">{{ workouts.length }}</span>
         </div>
-        <div class="flex justify-between">
-          <span class="text-gray-600">Pending Sync</span>
-          <span class="font-medium text-gray-900">{{ pendingCount }}</span>
+        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <ClockIcon class="w-5 h-5" />
+            <span>Pending Sync</span>
+          </div>
+          <span
+            class="font-semibold text-lg"
+            :class="[pendingCount > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-900 dark:text-white']"
+          >
+            {{ pendingCount }}
+          </span>
         </div>
-        <div class="flex justify-between">
-          <span class="text-gray-600">Templates</span>
-          <span class="font-medium text-gray-900">{{ templates.length }}</span>
+        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <DocumentDuplicateIcon class="w-5 h-5" />
+            <span>Templates</span>
+          </div>
+          <span class="font-semibold text-gray-900 dark:text-white text-lg">{{ templates.length }}</span>
         </div>
       </div>
-    </div>
+    </UiCard>
 
     <!-- App Info -->
-    <div class="bg-white border border-gray-200 rounded-lg p-6">
-      <h2 class="text-xl font-semibold text-gray-900 mb-4">About</h2>
-
-      <div class="space-y-3 text-sm text-gray-600">
-        <div>
-          <div class="font-medium text-gray-900 mb-1">Gymnote</div>
-          <div>Version 1.0.0</div>
+    <UiCard>
+      <template #header>
+        <div class="flex items-center gap-2">
+          <InformationCircleIcon class="w-5 h-5 text-primary-500" />
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">About</h2>
         </div>
+      </template>
+
+      <div class="space-y-4">
+        <div class="p-4 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950 dark:to-primary-900 rounded-lg border border-primary-200 dark:border-primary-800">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
+              <span class="text-white font-bold text-xl">G</span>
+            </div>
+            <div>
+              <div class="font-bold text-gray-900 dark:text-white">Gymnote</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">Version 1.0.0</div>
+            </div>
+          </div>
+        </div>
+
         <div>
-          <div class="font-medium text-gray-900 mb-1">Features</div>
-          <ul class="list-disc list-inside space-y-1">
-            <li>Offline-first workout tracking</li>
-            <li>Automatic cloud sync</li>
-            <li>Workout templates</li>
-            <li>PWA installable</li>
+          <div class="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            <SparklesIcon class="w-4 h-4 text-primary-500" />
+            Features
+          </div>
+          <ul class="space-y-2">
+            <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <CheckCircleIcon class="w-5 h-5 text-green-500 flex-shrink-0" />
+              Offline-first workout tracking
+            </li>
+            <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <CheckCircleIcon class="w-5 h-5 text-green-500 flex-shrink-0" />
+              Automatic cloud sync
+            </li>
+            <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <CheckCircleIcon class="w-5 h-5 text-green-500 flex-shrink-0" />
+              Workout templates
+            </li>
+            <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <CheckCircleIcon class="w-5 h-5 text-green-500 flex-shrink-0" />
+              PWA installable
+            </li>
+            <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <CheckCircleIcon class="w-5 h-5 text-green-500 flex-shrink-0" />
+              Dark mode support
+            </li>
           </ul>
         </div>
-        <div class="pt-4 border-t border-gray-200">
-          <p class="text-xs text-gray-500">
-            All data is stored locally on your device and synced to the cloud when online.
-            Your workouts are always accessible, even without internet.
+
+        <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <p class="text-xs text-gray-500 dark:text-gray-400 flex items-start gap-2">
+            <ShieldCheckIcon class="w-4 h-4 mt-0.5 flex-shrink-0 text-primary-500" />
+            <span>All data is stored locally on your device and synced to the cloud when online. Your workouts are always accessible, even without internet.</span>
           </p>
         </div>
       </div>
-    </div>
+    </UiCard>
 
     <!-- Data Management -->
-    <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-6">
-      <h3 class="text-lg font-semibold text-red-900 mb-3">Danger Zone</h3>
-      <p class="text-sm text-red-700 mb-4">
-        Clear all local data. This will delete all workouts from your device.
-        Synced workouts will remain in the cloud.
-      </p>
-      <button
-        @click="showClearData = true"
-        class="bg-red-600 text-white rounded-lg py-2 px-4 font-medium hover:bg-red-700"
-      >
-        Clear Local Data
-      </button>
-    </div>
+    <UiCard>
+      <template #header>
+        <div class="flex items-center gap-2">
+          <ExclamationTriangleIcon class="w-5 h-5 text-red-500" />
+          <h2 class="text-lg font-semibold text-red-900 dark:text-red-400">Danger Zone</h2>
+        </div>
+      </template>
+
+      <div class="space-y-4">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Clear all local data. This will delete all workouts from your device. Synced workouts will remain in the cloud.
+        </p>
+        <UiButton
+          @click="showClearData = true"
+          variant="danger"
+          size="lg"
+          full-width
+          :icon="TrashIcon"
+        >
+          Clear Local Data
+        </UiButton>
+      </div>
+    </UiCard>
 
     <!-- Clear Data Confirmation -->
-    <div
-      v-if="showClearData"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4"
-      @click.self="showClearData = false"
-    >
-      <div class="bg-white rounded-lg p-6 max-w-sm w-full">
-        <h3 class="text-lg font-semibold mb-2">Clear All Data?</h3>
-        <p class="text-gray-600 mb-6">
+    <UiModal v-model="showClearData" title="Clear All Data?" size="sm">
+      <div class="space-y-4">
+        <div class="w-16 h-16 bg-red-100 dark:bg-red-950 rounded-full flex items-center justify-center mx-auto">
+          <ExclamationTriangleIcon class="w-8 h-8 text-red-600 dark:text-red-400" />
+        </div>
+        <p class="text-center text-gray-600 dark:text-gray-400">
           This will delete all local workouts and templates. Synced data will remain in the cloud.
         </p>
+      </div>
+
+      <template #footer>
         <div class="flex gap-3">
-          <button
+          <UiButton
             @click="showClearData = false"
-            class="flex-1 border border-gray-300 rounded-lg py-2 font-medium text-gray-700 hover:bg-gray-50"
+            variant="secondary"
+            class="flex-1"
           >
             Cancel
-          </button>
-          <button
+          </UiButton>
+          <UiButton
             @click="handleClearData"
-            class="flex-1 bg-red-600 text-white rounded-lg py-2 font-medium hover:bg-red-700"
+            variant="danger"
+            class="flex-1"
           >
             Clear Data
-          </button>
+          </UiButton>
         </div>
-      </div>
-    </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
 <script setup lang="ts">
+import {
+  Cog6ToothIcon,
+  PaintBrushIcon,
+  MoonIcon,
+  SunIcon,
+  ArrowPathIcon,
+  WifiIcon,
+  ClockIcon,
+  CircleStackIcon,
+  RectangleStackIcon,
+  DocumentDuplicateIcon,
+  InformationCircleIcon,
+  SparklesIcon,
+  CheckCircleIcon,
+  ShieldCheckIcon,
+  ExclamationTriangleIcon,
+  TrashIcon
+} from '@heroicons/vue/24/outline'
+
 const { isOnline } = useNetwork()
 const { syncing, lastSyncTime, syncData } = useSync()
 const { workouts, loadWorkouts } = useWorkouts()
 const { templates, loadTemplates } = useTemplates()
+const { colorMode, toggleTheme } = useTheme()
 
 const showClearData = ref(false)
 

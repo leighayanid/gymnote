@@ -1,155 +1,233 @@
 <template>
   <div class="max-w-screen-xl mx-auto px-4 py-6">
-    <div v-if="loading" class="text-center py-12 text-gray-500">Loading...</div>
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center py-16">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 dark:border-gray-700 border-t-primary-500 mb-4"></div>
+      <p class="text-gray-500 dark:text-gray-400">Loading workout...</p>
+    </div>
 
-    <div v-else-if="!workout" class="text-center py-12">
-      <p class="text-gray-600 text-lg">Workout not found</p>
-      <NuxtLink to="/history" class="text-blue-600 hover:underline mt-4 inline-block">
-        Back to History
+    <!-- Not Found State -->
+    <div v-else-if="!workout" class="text-center py-16">
+      <div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+        <ExclamationCircleIcon class="w-10 h-10 text-gray-400 dark:text-gray-500" />
+      </div>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Workout not found</h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">This workout may have been deleted or doesn't exist</p>
+      <NuxtLink to="/history">
+        <UiButton variant="primary" :icon="ArrowLeftIcon">
+          Back to History
+        </UiButton>
       </NuxtLink>
     </div>
 
-    <div v-else>
+    <!-- Workout Details -->
+    <div v-else class="space-y-6">
       <!-- Header -->
-      <div class="flex items-center gap-4 mb-6">
+      <div class="flex items-center gap-4">
         <NuxtLink
           to="/history"
-          class="text-gray-600 hover:text-gray-900"
+          class="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         >
-          <svg
-            class="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
+          <ArrowLeftIcon class="w-5 h-5" />
         </NuxtLink>
         <div class="flex-1">
-          <h1 class="text-2xl font-bold text-gray-900">Workout Details</h1>
-          <p class="text-gray-600">{{ formatDate(workout.date) }}</p>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <FireIcon class="w-7 h-7 text-primary-500" />
+            Workout Details
+          </h1>
+          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400 mt-1">
+            <CalendarIcon class="w-4 h-4" />
+            <p class="text-sm">{{ formatDate(workout.date) }}</p>
+          </div>
         </div>
         <button
           @click="confirmDelete = true"
-          class="text-red-600 hover:text-red-700 p-2"
+          class="w-10 h-10 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 transition-colors"
         >
-          <svg
-            class="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-            />
-          </svg>
+          <TrashIcon class="w-5 h-5" />
         </button>
       </div>
 
-      <!-- Sync Status -->
-      <div
-        class="mb-6 px-4 py-3 rounded-lg flex items-center gap-2"
-        :class="[
-          workout.syncStatus === 'synced'
-            ? 'bg-green-50 text-green-700'
-            : workout.syncStatus === 'pending'
-            ? 'bg-yellow-50 text-yellow-700'
-            : 'bg-red-50 text-red-700'
-        ]"
-      >
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            v-if="workout.syncStatus === 'synced'"
-            fill-rule="evenodd"
-            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-            clip-rule="evenodd"
-          />
-          <path
-            v-else
-            fill-rule="evenodd"
-            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        <span class="text-sm font-medium">
-          {{ workout.syncStatus === 'synced' ? 'Synced to cloud' : 'Waiting to sync' }}
-        </span>
-      </div>
-
-      <!-- Notes -->
-      <div v-if="workout.notes" class="mb-6 bg-gray-50 rounded-lg p-4">
-        <h3 class="text-sm font-medium text-gray-700 mb-2">Notes</h3>
-        <p class="text-gray-900">{{ workout.notes }}</p>
-      </div>
-
-      <!-- Exercises -->
-      <div class="space-y-4">
-        <h2 class="text-xl font-semibold text-gray-900">Exercises</h2>
+      <!-- Sync Status Card -->
+      <UiCard>
         <div
-          v-for="exercise in workout.exercises"
-          :key="exercise.localId"
-          class="bg-white border border-gray-200 rounded-lg p-4"
+          class="flex items-center gap-3 p-4 rounded-lg"
+          :class="[
+            workout.syncStatus === 'synced'
+              ? 'bg-green-50 dark:bg-green-950/30'
+              : workout.syncStatus === 'pending'
+              ? 'bg-yellow-50 dark:bg-yellow-950/30'
+              : 'bg-red-50 dark:bg-red-950/30'
+          ]"
         >
-          <h3 class="font-medium text-gray-900 text-lg mb-2">
-            {{ exercise.name }}
-          </h3>
-          <div class="flex gap-6 text-sm text-gray-600">
-            <div>
-              <span class="font-medium">Sets:</span> {{ exercise.sets }}
-            </div>
-            <div>
-              <span class="font-medium">Reps:</span> {{ exercise.reps }}
-            </div>
-            <div v-if="exercise.weight">
-              <span class="font-medium">Weight:</span> {{ exercise.weight }}kg
-            </div>
+          <div
+            class="w-10 h-10 rounded-full flex items-center justify-center"
+            :class="[
+              workout.syncStatus === 'synced'
+                ? 'bg-green-100 dark:bg-green-900'
+                : workout.syncStatus === 'pending'
+                ? 'bg-yellow-100 dark:bg-yellow-900'
+                : 'bg-red-100 dark:bg-red-900'
+            ]"
+          >
+            <CheckCircleIcon
+              v-if="workout.syncStatus === 'synced'"
+              class="w-6 h-6 text-green-600 dark:text-green-400"
+            />
+            <ClockIcon
+              v-else
+              class="w-6 h-6"
+              :class="[
+                workout.syncStatus === 'pending'
+                  ? 'text-yellow-600 dark:text-yellow-400'
+                  : 'text-red-600 dark:text-red-400'
+              ]"
+            />
           </div>
-          <div v-if="exercise.notes" class="mt-2 text-sm text-gray-500 italic">
-            {{ exercise.notes }}
+          <div>
+            <div
+              class="font-semibold"
+              :class="[
+                workout.syncStatus === 'synced'
+                  ? 'text-green-900 dark:text-green-300'
+                  : workout.syncStatus === 'pending'
+                  ? 'text-yellow-900 dark:text-yellow-300'
+                  : 'text-red-900 dark:text-red-300'
+              ]"
+            >
+              {{ workout.syncStatus === 'synced' ? 'Synced to cloud' : 'Waiting to sync' }}
+            </div>
+            <div
+              class="text-sm"
+              :class="[
+                workout.syncStatus === 'synced'
+                  ? 'text-green-700 dark:text-green-400'
+                  : workout.syncStatus === 'pending'
+                  ? 'text-yellow-700 dark:text-yellow-400'
+                  : 'text-red-700 dark:text-red-400'
+              ]"
+            >
+              {{ workout.syncStatus === 'synced' ? 'Your workout is backed up' : 'Will sync when online' }}
+            </div>
           </div>
         </div>
+      </UiCard>
+
+      <!-- Notes Card -->
+      <UiCard v-if="workout.notes">
+        <template #header>
+          <div class="flex items-center gap-2">
+            <DocumentTextIcon class="w-5 h-5 text-primary-500" />
+            <h3 class="font-semibold text-gray-900 dark:text-white">Notes</h3>
+          </div>
+        </template>
+        <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ workout.notes }}</p>
+      </UiCard>
+
+      <!-- Exercises Card -->
+      <UiCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <RectangleStackIcon class="w-5 h-5 text-primary-500" />
+              <h2 class="font-semibold text-gray-900 dark:text-white">Exercises</h2>
+            </div>
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+              {{ workout.exercises.length }} total
+            </span>
+          </div>
+        </template>
+
+        <div class="space-y-3">
+          <div
+            v-for="(exercise, index) in workout.exercises"
+            :key="exercise.localId"
+            class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700"
+          >
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                  <span class="text-primary-600 dark:text-primary-400 font-bold text-sm">{{ index + 1 }}</span>
+                </div>
+                <h3 class="font-semibold text-gray-900 dark:text-white text-lg">
+                  {{ exercise.name }}
+                </h3>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+              <div class="text-center p-3 bg-white dark:bg-gray-900 rounded-lg">
+                <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ exercise.sets }}</div>
+                <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Sets</div>
+              </div>
+              <div class="text-center p-3 bg-white dark:bg-gray-900 rounded-lg">
+                <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ exercise.reps }}</div>
+                <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Reps</div>
+              </div>
+              <div class="text-center p-3 bg-white dark:bg-gray-900 rounded-lg">
+                <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                  {{ exercise.weight || '-' }}
+                </div>
+                <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  {{ exercise.weight ? 'kg' : 'Weight' }}
+                </div>
+              </div>
+            </div>
+
+            <div v-if="exercise.notes" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <p class="text-sm text-gray-600 dark:text-gray-400 italic">{{ exercise.notes }}</p>
+            </div>
+          </div>
+        </div>
+      </UiCard>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <UiModal v-model="confirmDelete" title="Delete Workout?" size="sm">
+      <div class="space-y-4">
+        <div class="w-16 h-16 bg-red-100 dark:bg-red-950 rounded-full flex items-center justify-center mx-auto">
+          <ExclamationTriangleIcon class="w-8 h-8 text-red-600 dark:text-red-400" />
+        </div>
+        <p class="text-center text-gray-600 dark:text-gray-400">
+          This action cannot be undone. The workout will be deleted from both local storage and the cloud.
+        </p>
       </div>
 
-      <!-- Delete Confirmation -->
-      <div
-        v-if="confirmDelete"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4"
-        @click.self="confirmDelete = false"
-      >
-        <div class="bg-white rounded-lg p-6 max-w-sm w-full">
-          <h3 class="text-lg font-semibold mb-2">Delete Workout?</h3>
-          <p class="text-gray-600 mb-6">
-            This action cannot be undone. The workout will be deleted from both local storage and the cloud.
-          </p>
-          <div class="flex gap-3">
-            <button
-              @click="confirmDelete = false"
-              class="flex-1 border border-gray-300 rounded-lg py-2 font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              @click="handleDelete"
-              class="flex-1 bg-red-600 text-white rounded-lg py-2 font-medium hover:bg-red-700"
-            >
-              Delete
-            </button>
-          </div>
+      <template #footer>
+        <div class="flex gap-3">
+          <UiButton
+            @click="confirmDelete = false"
+            variant="secondary"
+            class="flex-1"
+          >
+            Cancel
+          </UiButton>
+          <UiButton
+            @click="handleDelete"
+            variant="danger"
+            class="flex-1"
+          >
+            Delete
+          </UiButton>
         </div>
-      </div>
-    </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
 <script setup lang="ts">
+import {
+  ExclamationCircleIcon,
+  ArrowLeftIcon,
+  FireIcon,
+  CalendarIcon,
+  TrashIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  RectangleStackIcon,
+  ExclamationTriangleIcon
+} from '@heroicons/vue/24/outline'
 import type { LocalWorkout } from '~/types'
 
 const route = useRoute()

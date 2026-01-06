@@ -1,84 +1,120 @@
 <template>
   <div class="max-w-screen-xl mx-auto px-4 py-6">
-    <h1 class="text-3xl font-bold text-gray-900 mb-6">Workout History</h1>
-
-    <div v-if="loading" class="text-center py-12 text-gray-500">
-      Loading...
+    <!-- Page Header -->
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+        <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
+          <ClockIcon class="w-6 h-6 text-white" />
+        </div>
+        Workout History
+      </h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2 ml-13">Track your progress over time</p>
     </div>
 
-    <div v-else-if="workouts.length === 0" class="text-center py-12">
-      <svg
-        class="w-16 h-16 mx-auto text-gray-400 mb-4"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-        />
-      </svg>
-      <p class="text-gray-600 text-lg">No workouts yet</p>
-      <p class="text-gray-500 mt-2">Start your first workout to see it here</p>
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center py-16">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 dark:border-gray-700 border-t-primary-500 mb-4"></div>
+      <p class="text-gray-500 dark:text-gray-400">Loading your workouts...</p>
     </div>
 
+    <!-- Empty State -->
+    <div v-else-if="workouts.length === 0" class="text-center py-16">
+      <div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+        <DocumentTextIcon class="w-10 h-10 text-gray-400 dark:text-gray-500" />
+      </div>
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No workouts yet</h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">Start your first workout to see it here</p>
+      <NuxtLink to="/">
+        <UiButton variant="primary" :icon="PlusCircleIcon">
+          Create Workout
+        </UiButton>
+      </NuxtLink>
+    </div>
+
+    <!-- Workout History -->
     <div v-else class="space-y-6">
       <div v-for="(group, date) in groupedWorkouts" :key="date">
-        <h2 class="text-lg font-semibold text-gray-700 mb-3 sticky top-0 bg-white py-2">
-          {{ formatDate(date) }}
-        </h2>
+        <div class="sticky top-16 z-30 bg-gray-50 dark:bg-gray-950 py-3 mb-4">
+          <div class="flex items-center gap-2">
+            <CalendarDaysIcon class="w-5 h-5 text-primary-500" />
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+              {{ formatDate(date) }}
+            </h2>
+            <span class="text-sm text-gray-500 dark:text-gray-400 ml-auto">
+              {{ group.length }} {{ group.length === 1 ? 'workout' : 'workouts' }}
+            </span>
+          </div>
+        </div>
+
         <div class="space-y-3">
           <NuxtLink
             v-for="workout in group"
             :key="workout.localId"
             :to="`/workout/${workout.localId}`"
-            class="block bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
           >
-            <div class="flex justify-between items-start mb-3">
-              <div>
-                <div class="font-medium text-gray-900 mb-1">
-                  {{ formatTime(workout.date) }}
+            <UiCard hover clickable>
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                    <FireIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                  </div>
+                  <div>
+                    <div class="font-semibold text-gray-900 dark:text-white mb-1">
+                      {{ formatTime(workout.date) }}
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <RectangleStackIcon class="w-4 h-4" />
+                      {{ workout.exercises.length }} {{ workout.exercises.length === 1 ? 'exercise' : 'exercises' }}
+                    </div>
+                  </div>
                 </div>
-                <div class="text-sm text-gray-600">
-                  {{ workout.exercises.length }} exercises
+                <div
+                  class="text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1"
+                  :class="[
+                    workout.syncStatus === 'synced'
+                      ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400'
+                      : workout.syncStatus === 'pending'
+                      ? 'bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400'
+                      : 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400'
+                  ]"
+                >
+                  <div class="w-1.5 h-1.5 rounded-full" :class="[
+                    workout.syncStatus === 'synced' ? 'bg-green-500' :
+                    workout.syncStatus === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
+                  ]"></div>
+                  {{ workout.syncStatus }}
                 </div>
               </div>
-              <div
-                class="text-xs px-2 py-1 rounded"
-                :class="[
-                  workout.syncStatus === 'synced'
-                    ? 'bg-green-100 text-green-700'
-                    : workout.syncStatus === 'pending'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-red-100 text-red-700'
-                ]"
-              >
-                {{ workout.syncStatus }}
-              </div>
-            </div>
 
-            <div class="space-y-1">
-              <div
-                v-for="exercise in workout.exercises.slice(0, 3)"
-                :key="exercise.localId"
-                class="text-sm text-gray-600"
-              >
-                {{ exercise.name }} - {{ exercise.sets }}×{{ exercise.reps }}
-                <span v-if="exercise.weight"> @ {{ exercise.weight }}kg</span>
+              <div class="space-y-2 mt-4">
+                <div
+                  v-for="exercise in workout.exercises.slice(0, 3)"
+                  :key="exercise.localId"
+                  class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2"
+                >
+                  <div class="w-1 h-1 bg-primary-500 rounded-full"></div>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ exercise.name }}</span>
+                  <span class="text-gray-500 dark:text-gray-500">-</span>
+                  <span>{{ exercise.sets }}×{{ exercise.reps }}</span>
+                  <span v-if="exercise.weight" class="text-primary-600 dark:text-primary-400 font-medium">
+                    @ {{ exercise.weight }}kg
+                  </span>
+                </div>
+                <div
+                  v-if="workout.exercises.length > 3"
+                  class="text-sm text-gray-500 dark:text-gray-400 pl-5"
+                >
+                  +{{ workout.exercises.length - 3 }} more exercise{{ workout.exercises.length - 3 > 1 ? 's' : '' }}
+                </div>
               </div>
-              <div
-                v-if="workout.exercises.length > 3"
-                class="text-sm text-gray-500"
-              >
-                +{{ workout.exercises.length - 3 }} more
-              </div>
-            </div>
 
-            <div v-if="workout.notes" class="mt-3 text-sm text-gray-500 italic">
-              {{ workout.notes }}
-            </div>
+              <div v-if="workout.notes" class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <DocumentTextIcon class="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span class="italic">{{ workout.notes }}</span>
+                </div>
+              </div>
+            </UiCard>
           </NuxtLink>
         </div>
       </div>
@@ -87,6 +123,14 @@
 </template>
 
 <script setup lang="ts">
+import {
+  ClockIcon,
+  DocumentTextIcon,
+  PlusCircleIcon,
+  CalendarDaysIcon,
+  FireIcon,
+  RectangleStackIcon
+} from '@heroicons/vue/24/outline'
 import type { LocalWorkout } from '~/types'
 
 const { workouts, loading, loadWorkouts } = useWorkouts()

@@ -1,24 +1,36 @@
 <template>
-  <div class="max-w-screen-xl mx-auto px-4 py-6">
-    <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Today's Workout</h1>
-      <p class="text-gray-600">{{ formattedDate }}</p>
+  <div class="max-w-screen-xl mx-auto px-4 py-6 space-y-6">
+    <!-- Page Header -->
+    <div class="space-y-2">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Today's Workout</h1>
+      <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+        <CalendarIcon class="w-5 h-5" />
+        <p>{{ formattedDate }}</p>
+      </div>
     </div>
 
     <!-- Templates Section -->
-    <div class="mb-8">
-      <h2 class="text-xl font-semibold text-gray-900 mb-4">
-        Start from Template
-      </h2>
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <SparklesIcon class="w-6 h-6 text-primary-500" />
+          Quick Start Templates
+        </h2>
+      </div>
+
       <div class="grid grid-cols-2 gap-3">
         <button
           v-for="template in templates"
           :key="template.id"
           @click="startFromTemplate(template.id)"
-          class="bg-white border-2 border-gray-200 rounded-lg p-4 text-left hover:border-blue-500 hover:shadow-md transition-all active:scale-95"
+          class="group relative bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950 dark:to-primary-900 border-2 border-primary-200 dark:border-primary-800 rounded-xl p-4 text-left hover:border-primary-400 dark:hover:border-primary-600 hover:shadow-lg transition-all active:scale-95"
         >
-          <div class="font-medium text-gray-900 mb-1">{{ template.name }}</div>
-          <div class="text-sm text-gray-500">
+          <div class="absolute top-3 right-3">
+            <FireIcon class="w-5 h-5 text-primary-500 dark:text-primary-400" />
+          </div>
+          <div class="font-semibold text-gray-900 dark:text-white mb-2 pr-8">{{ template.name }}</div>
+          <div class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+            <RectangleStackIcon class="w-4 h-4" />
             {{ template.exercises.length }} exercises
           </div>
         </button>
@@ -26,36 +38,27 @@
     </div>
 
     <!-- Or divider -->
-    <div class="flex items-center mb-8">
-      <div class="flex-1 border-t border-gray-200"></div>
-      <span class="px-4 text-sm text-gray-500">or</span>
-      <div class="flex-1 border-t border-gray-200"></div>
+    <div class="flex items-center">
+      <div class="flex-1 border-t border-gray-300 dark:border-gray-700"></div>
+      <span class="px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">or</span>
+      <div class="flex-1 border-t border-gray-300 dark:border-gray-700"></div>
     </div>
 
     <!-- Custom Workout Button -->
-    <button
+    <UiButton
       @click="showNewWorkout = true"
-      class="w-full bg-blue-600 text-white rounded-lg py-4 px-6 font-medium text-lg hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+      variant="primary"
+      size="lg"
+      :icon="PlusCircleIcon"
+      full-width
     >
-      <svg
-        class="w-6 h-6"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M12 4v16m8-8H4"
-        />
-      </svg>
       Create Custom Workout
-    </button>
+    </UiButton>
 
     <!-- Today's Workouts -->
-    <div v-if="todayWorkouts.length > 0" class="mt-8">
-      <h2 class="text-xl font-semibold text-gray-900 mb-4">
+    <div v-if="todayWorkouts.length > 0" class="space-y-4">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <BoltIcon class="w-6 h-6 text-primary-500" />
         Today's Sessions
       </h2>
       <div class="space-y-3">
@@ -63,118 +66,157 @@
           v-for="workout in todayWorkouts"
           :key="workout.localId"
           :to="`/workout/${workout.localId}`"
-          class="block bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
         >
-          <div class="flex justify-between items-start mb-2">
-            <div class="font-medium text-gray-900">
-              {{ formatTime(workout.date) }}
+          <UiCard hover clickable>
+            <div class="flex justify-between items-start mb-3">
+              <div class="flex items-center gap-2">
+                <ClockIcon class="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                <div class="font-semibold text-gray-900 dark:text-white">
+                  {{ formatTime(workout.date) }}
+                </div>
+              </div>
+              <div
+                class="text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1"
+                :class="[
+                  workout.syncStatus === 'synced'
+                    ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400'
+                    : workout.syncStatus === 'pending'
+                    ? 'bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400'
+                    : 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400'
+                ]"
+              >
+                <div class="w-1.5 h-1.5 rounded-full" :class="[
+                  workout.syncStatus === 'synced' ? 'bg-green-500' :
+                  workout.syncStatus === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
+                ]"></div>
+                {{ workout.syncStatus }}
+              </div>
             </div>
-            <div
-              class="text-xs px-2 py-1 rounded"
-              :class="[
-                workout.syncStatus === 'synced'
-                  ? 'bg-green-100 text-green-700'
-                  : workout.syncStatus === 'pending'
-                  ? 'bg-yellow-100 text-yellow-700'
-                  : 'bg-red-100 text-red-700'
-              ]"
-            >
-              {{ workout.syncStatus }}
+            <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+              <RectangleStackIcon class="w-4 h-4" />
+              {{ workout.exercises.length }} exercises
             </div>
-          </div>
-          <div class="text-sm text-gray-600">
-            {{ workout.exercises.length }} exercises
-          </div>
-          <div v-if="workout.notes" class="text-sm text-gray-500 mt-1">
-            {{ workout.notes }}
-          </div>
+            <div v-if="workout.notes" class="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2 mt-2">
+              {{ workout.notes }}
+            </div>
+          </UiCard>
         </NuxtLink>
       </div>
     </div>
 
+    <!-- Empty State -->
+    <div v-else class="text-center py-12">
+      <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+        <RocketLaunchIcon class="w-8 h-8 text-gray-400 dark:text-gray-500" />
+      </div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No workouts yet today</h3>
+      <p class="text-gray-600 dark:text-gray-400">Start with a template or create a custom workout</p>
+    </div>
+
     <!-- New Workout Modal -->
-    <div
-      v-if="showNewWorkout"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50"
-      @click.self="showNewWorkout = false"
-    >
-      <div
-        class="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg p-6 max-h-[90vh] overflow-y-auto"
-      >
-        <h2 class="text-2xl font-bold mb-4">New Workout</h2>
+    <UiModal v-model="showNewWorkout" title="New Workout" size="lg">
+      <div class="space-y-6">
+        <UiTextArea
+          v-model="newWorkoutNotes"
+          label="Notes"
+          placeholder="Optional workout notes..."
+          :rows="3"
+        />
 
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Notes
-          </label>
-          <textarea
-            v-model="newWorkoutNotes"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            rows="3"
-            placeholder="Optional notes..."
-          ></textarea>
-        </div>
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <RectangleStackIcon class="w-5 h-5 text-primary-500" />
+            Exercises
+          </h3>
 
-        <div class="mb-4">
-          <h3 class="text-lg font-semibold mb-3">Exercises</h3>
-          <div v-for="(exercise, index) in newWorkoutExercises" :key="index" class="mb-4 p-4 bg-gray-50 rounded-lg">
-            <input
+          <div v-for="(exercise, index) in newWorkoutExercises" :key="index" class="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Exercise {{ index + 1 }}</span>
+              <button
+                v-if="newWorkoutExercises.length > 1"
+                @click="removeExercise(index)"
+                class="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
+              >
+                <TrashIcon class="w-5 h-5" />
+              </button>
+            </div>
+
+            <UiInput
               v-model="exercise.name"
-              type="text"
               placeholder="Exercise name"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2"
+              :icon="FireIcon"
             />
+
             <div class="grid grid-cols-3 gap-2">
-              <input
+              <UiInput
                 v-model.number="exercise.sets"
                 type="number"
                 placeholder="Sets"
-                class="border border-gray-300 rounded-lg px-3 py-2"
+                :min="1"
               />
-              <input
+              <UiInput
                 v-model.number="exercise.reps"
                 type="number"
                 placeholder="Reps"
-                class="border border-gray-300 rounded-lg px-3 py-2"
+                :min="1"
               />
-              <input
+              <UiInput
                 v-model.number="exercise.weight"
                 type="number"
                 placeholder="Weight"
-                class="border border-gray-300 rounded-lg px-3 py-2"
+                :min="0"
               />
             </div>
           </div>
 
-          <button
+          <UiButton
             @click="addExercise"
-            class="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+            variant="outline"
+            full-width
+            :icon="PlusIcon"
           >
-            + Add Exercise
-          </button>
+            Add Exercise
+          </UiButton>
         </div>
+      </div>
 
+      <template #footer>
         <div class="flex gap-3">
-          <button
+          <UiButton
             @click="showNewWorkout = false"
-            class="flex-1 border border-gray-300 rounded-lg py-3 font-medium text-gray-700 hover:bg-gray-50"
+            variant="secondary"
+            class="flex-1"
           >
             Cancel
-          </button>
-          <button
+          </UiButton>
+          <UiButton
             @click="saveNewWorkout"
-            class="flex-1 bg-blue-600 text-white rounded-lg py-3 font-medium hover:bg-blue-700"
+            variant="primary"
+            class="flex-1"
             :disabled="!canSaveWorkout"
           >
             Save Workout
-          </button>
+          </UiButton>
         </div>
-      </div>
-    </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
 <script setup lang="ts">
+import {
+  CalendarIcon,
+  SparklesIcon,
+  FireIcon,
+  RectangleStackIcon,
+  PlusCircleIcon,
+  BoltIcon,
+  ClockIcon,
+  RocketLaunchIcon,
+  PlusIcon,
+  TrashIcon
+} from '@heroicons/vue/24/outline'
+
 const { templates, loadTemplates, createWorkoutFromTemplate } = useTemplates()
 const { workouts, loadWorkouts, createWorkout } = useWorkouts()
 
@@ -219,6 +261,10 @@ const formatTime = (date: Date) => {
 
 const addExercise = () => {
   newWorkoutExercises.value.push({ name: '', sets: 3, reps: 10, weight: 0 })
+}
+
+const removeExercise = (index: number) => {
+  newWorkoutExercises.value.splice(index, 1)
 }
 
 const startFromTemplate = async (templateId: string) => {
