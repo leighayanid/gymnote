@@ -151,9 +151,11 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const { user, logout } = useAuth()
-const { isDark, toggleTheme } = useTheme()
+const { colorMode, toggleTheme } = useTheme()
 const { workouts } = useWorkouts()
 const router = useRouter()
+
+const isDark = computed(() => colorMode.value === 'dark')
 
 const isOpen = ref(false)
 const isMobile = ref(true)
