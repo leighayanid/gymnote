@@ -541,6 +541,26 @@
                 />
               </div>
 
+              <!-- Error Message -->
+              <Transition
+                enter-active-class="transition-all duration-300"
+                enter-from-class="opacity-0 -translate-y-2"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-200"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-2"
+              >
+                <div v-if="loginError" class="p-4 bg-red-950/50 border-2 border-red-500 text-red-400 font-mono text-sm">
+                  <div class="flex items-start gap-2">
+                    <span class="text-red-500 font-bold">✕</span>
+                    <div>
+                      <div class="font-bold mb-1">Login Failed</div>
+                      <div class="text-xs">{{ loginError }}</div>
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+
               <button
                 type="submit"
                 :disabled="isLoading"
@@ -612,6 +632,26 @@
                 </div>
               </div>
 
+              <!-- Error Message -->
+              <Transition
+                enter-active-class="transition-all duration-300"
+                enter-from-class="opacity-0 -translate-y-2"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-200"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-2"
+              >
+                <div v-if="signupError" class="p-4 bg-red-950/50 border-2 border-red-500 text-red-400 font-mono text-sm">
+                  <div class="flex items-start gap-2">
+                    <span class="text-red-500 font-bold">✕</span>
+                    <div>
+                      <div class="font-bold mb-1">Signup Failed</div>
+                      <div class="text-xs">{{ signupError }}</div>
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+
               <button
                 type="submit"
                 :disabled="isLoading || !isPasswordValid"
@@ -649,6 +689,8 @@ const showAuthModal = ref(false)
 const authMode = ref<'login' | 'signup'>('signup')
 const isLoading = ref(false)
 const showPasswordRequirements = ref(false)
+const loginError = ref('')
+const signupError = ref('')
 
 const loginForm = ref({
   email: '',
@@ -659,6 +701,19 @@ const signupForm = ref({
   name: '',
   email: '',
   password: ''
+})
+
+// Clear errors when user starts typing
+watch(() => loginForm.value.email, () => { loginError.value = '' })
+watch(() => loginForm.value.password, () => { loginError.value = '' })
+watch(() => signupForm.value.name, () => { signupError.value = '' })
+watch(() => signupForm.value.email, () => { signupError.value = '' })
+watch(() => signupForm.value.password, () => { signupError.value = '' })
+
+// Clear errors when switching between login and signup modes
+watch(authMode, () => {
+  loginError.value = ''
+  signupError.value = ''
 })
 
 // Password validation
@@ -704,13 +759,27 @@ const scrollToFeatures = () => {
 
 const handleLogin = async () => {
   isLoading.value = true
+  loginError.value = ''
   try {
     await login(loginForm.value.email, loginForm.value.password)
     toast.success('Login successful', 'Welcome back!')
     showAuthModal.value = false
     await router.push('/dashboard')
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error)
+
+    // Extract error message from the error object
+    let errorMessage = 'An error occurred during login. Please try again.'
+
+    if (error?.data?.message) {
+      errorMessage = error.data.message
+    } else if (error?.message) {
+      errorMessage = error.message
+    } else if (error?.statusMessage) {
+      errorMessage = error.statusMessage
+    }
+
+    loginError.value = errorMessage
     toast.handleError(error, 'Login failed')
   } finally {
     isLoading.value = false
@@ -719,18 +788,33 @@ const handleLogin = async () => {
 
 const handleSignup = async () => {
   if (!isPasswordValid.value) {
+    signupError.value = 'Please meet all password requirements'
     toast.error('Invalid password', 'Please meet all password requirements')
     return
   }
 
   isLoading.value = true
+  signupError.value = ''
   try {
     await signup(signupForm.value.name, signupForm.value.email, signupForm.value.password)
     toast.success('Account created', 'Welcome to Gymnote!')
     showAuthModal.value = false
     await router.push('/welcome')
-  } catch (error) {
+  } catch (error: any) {
     console.error('Signup error:', error)
+
+    // Extract error message from the error object
+    let errorMessage = 'An error occurred during signup. Please try again.'
+
+    if (error?.data?.message) {
+      errorMessage = error.data.message
+    } else if (error?.message) {
+      errorMessage = error.message
+    } else if (error?.statusMessage) {
+      errorMessage = error.statusMessage
+    }
+
+    signupError.value = errorMessage
     toast.handleError(error, 'Signup failed')
   } finally {
     isLoading.value = false
