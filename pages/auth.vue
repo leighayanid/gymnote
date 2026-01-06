@@ -235,13 +235,23 @@ const heroContent = ref<HTMLElement>()
 const formContainer = ref<HTMLElement>()
 
 const handleLogin = async () => {
-  login(loginForm.value.email, loginForm.value.password)
-  await router.push('/welcome')
+  try {
+    await login(loginForm.value.email, loginForm.value.password)
+    await router.push('/welcome')
+  } catch (error) {
+    console.error('Login error:', error)
+    alert('Login failed. Please check your credentials and try again.')
+  }
 }
 
 const handleSignup = async () => {
-  signup(signupForm.value.name, signupForm.value.email, signupForm.value.password)
-  await router.push('/welcome')
+  try {
+    await signup(signupForm.value.name, signupForm.value.email, signupForm.value.password)
+    await router.push('/welcome')
+  } catch (error) {
+    console.error('Signup error:', error)
+    alert('Signup failed. Please try again.')
+  }
 }
 
 onMounted(() => {
