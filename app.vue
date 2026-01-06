@@ -29,7 +29,7 @@ onMounted(() => {
     } else if (isAuthenticated.value && !hasSeenWelcome.value && route.path !== '/welcome') {
       router.push('/welcome')
     } else if (isAuthenticated.value && route.path === '/auth') {
-      router.push('/')
+      router.push('/dashboard')
     }
   })
 })
