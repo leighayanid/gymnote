@@ -21,23 +21,21 @@ onMounted(() => {
 
   // Handle authentication routing
   nextTick(() => {
-    const publicRoutes = ['/auth', '/welcome']
+    const publicRoutes = ['/', '/welcome']
     const isPublicRoute = publicRoutes.includes(route.path)
 
     if (!isAuthenticated.value && !isPublicRoute) {
-      router.push('/auth')
+      router.push('/')
     } else if (isAuthenticated.value && !hasSeenWelcome.value && route.path !== '/welcome') {
       router.push('/welcome')
-    } else if (isAuthenticated.value && route.path === '/auth') {
-      router.push('/dashboard')
     }
   })
 })
 
 // Watch for auth changes
 watch(isAuthenticated, (newVal) => {
-  if (!newVal && route.path !== '/auth') {
-    router.push('/auth')
+  if (!newVal && route.path !== '/') {
+    router.push('/')
   }
 })
 </script>

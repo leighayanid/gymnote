@@ -925,7 +925,7 @@ onMounted(() => {
   }
 
   if (testimonials.value) {
-    const testimonialCards = testimonials.value.querySelectorAll('> div')
+    const testimonialCards = testimonials.value.querySelectorAll(':scope > div')
     gsap.from(testimonialCards, {
       scrollTrigger: {
         trigger: testimonials.value,

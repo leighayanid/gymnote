@@ -201,7 +201,7 @@ const closeSidebar = () => {
 
 const handleLogout = async () => {
   logout()
-  await router.push('/auth')
+  await router.push('/')
 }
 
 const checkMobile = () => {
