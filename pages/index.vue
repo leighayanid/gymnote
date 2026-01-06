@@ -204,6 +204,7 @@
 </template>
 
 <script setup lang="ts">
+import { gsap } from 'gsap'
 import {
   CalendarIcon,
   SparklesIcon,
@@ -292,5 +293,40 @@ const saveNewWorkout = async () => {
 onMounted(async () => {
   await loadTemplates()
   await loadWorkouts()
+
+  // Animate page elements on mount
+  nextTick(() => {
+    // Animate header
+    gsap.from('.space-y-2', {
+      y: -20,
+      opacity: 0,
+      duration: 0.6,
+      ease: 'power2.out'
+    })
+
+    // Animate template cards
+    const templateCards = document.querySelectorAll('.grid.grid-cols-2 > button')
+    gsap.from(templateCards, {
+      scale: 0.8,
+      opacity: 0,
+      duration: 0.5,
+      stagger: 0.1,
+      ease: 'back.out(1.7)',
+      delay: 0.2
+    })
+
+    // Animate workout cards if they exist
+    const workoutCards = document.querySelectorAll('.space-y-3 > a')
+    if (workoutCards.length > 0) {
+      gsap.from(workoutCards, {
+        x: -30,
+        opacity: 0,
+        duration: 0.5,
+        stagger: 0.1,
+        ease: 'power2.out',
+        delay: 0.4
+      })
+    }
+  })
 })
 </script>
