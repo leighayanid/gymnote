@@ -42,3 +42,31 @@ export interface WorkoutTemplate {
     weight?: number
   }[]
 }
+
+// Exercise API types
+export interface ExerciseSearchResult {
+  id?: string
+  name: string
+  bodyPart: string
+  target: string
+  equipment: string
+  gifUrl?: string
+}
+
+export interface CachedExercise {
+  name: string
+  bodyPart: string
+  target: string
+  equipment: string
+  cachedAt: Date
+  searchCount: number // Track popularity for better caching
+}
+
+export interface ExerciseAPIResponse {
+  id: string
+  name: string
+  bodyPart: string
+  target: string
+  equipment: string
+  gifUrl: string
+}

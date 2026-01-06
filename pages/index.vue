@@ -72,6 +72,14 @@ const startFromTemplate = async (templateId: string) => {
   await loadWorkouts()
 }
 
+const handleExerciseSelect = (index: number, selected: any) => {
+  if (selected) {
+    // Exercise selected from API/cache - use the name
+    newWorkoutExercises.value[index].name = selected.name
+  }
+  // If selected is null, user is using custom exercise name, which is already in the model
+}
+
 const saveNewWorkout = async () => {
   const validExercises = newWorkoutExercises.value.filter(e => e.name.trim() !== '')
 
@@ -294,10 +302,11 @@ onMounted(async () => {
               </button>
             </div>
 
-            <UiInput
+            <UiExerciseAutocomplete
               v-model="exercise.name"
-              placeholder="Exercise name"
+              placeholder="Search or enter exercise name"
               :icon="FireIcon"
+              @select="(selected) => handleExerciseSelect(index, selected)"
             />
 
             <div class="grid grid-cols-3 gap-2">
