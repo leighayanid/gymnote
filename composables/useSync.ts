@@ -5,6 +5,7 @@ export const useSync = () => {
   const { isOnline } = useNetwork()
   const syncing = useState('syncing', () => false)
   const lastSyncTime = useState<Date | null>('lastSyncTime', () => null)
+  const toast = useToast()
 
   const addToSyncQueue = async (item: SyncQueueItem) => {
     await localDB.init()
@@ -34,6 +35,9 @@ export const useSync = () => {
       // Group items by workout for batch processing
       const workoutItems = queue.filter(item => item.entityType === 'workout')
 
+      let hasFailures = false
+      let successCount = 0
+
       // Process each item
       for (const item of workoutItems) {
         try {
@@ -47,8 +51,10 @@ export const useSync = () => {
 
           // Remove from sync queue on success
           await localDB.removeSyncQueueItem(item.id)
+          successCount++
         } catch (error) {
           console.error('Sync failed for item:', item, error)
+          hasFailures = true
 
           // Increment retry count
           item.retryCount++
@@ -56,14 +62,21 @@ export const useSync = () => {
             await localDB.addToSyncQueue(item)
           } else {
             console.error('Max retries reached for item:', item)
+            toast.error('Sync failed', 'Some workouts could not be synced. Please check your connection.')
             // Mark as failed but keep in queue for manual retry
           }
         }
       }
 
       lastSyncTime.value = new Date()
+
+      // Show success message only if we synced items and had no failures
+      if (successCount > 0 && !hasFailures) {
+        toast.success('Sync complete', `${successCount} workout${successCount > 1 ? 's' : ''} synced successfully`)
+      }
     } catch (error) {
       console.error('Sync failed:', error)
+      toast.error('Sync error', 'Unable to sync your workouts. Please try again later.')
     } finally {
       syncing.value = false
     }

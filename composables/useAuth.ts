@@ -31,8 +31,18 @@ export const useAuth = () => {
         localStorage.setItem('gymnote_refresh_token', refreshToken.value!)
         localStorage.setItem('gymnote_authenticated', 'true')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error)
+      // Enhance error with user-friendly message if not already present
+      if (error?.statusCode === 401) {
+        error.data = error.data || {}
+        error.data.message = error.data.message || 'Invalid email or password'
+      } else if (error?.statusCode === 400) {
+        error.data = error.data || {}
+        error.data.message = error.data.message || 'Please provide valid email and password'
+      } else if (!error?.data?.message && !error?.message) {
+        error.message = 'Unable to connect to server. Please check your connection.'
+      }
       throw error
     }
   }
@@ -66,8 +76,18 @@ export const useAuth = () => {
         localStorage.setItem('gymnote_authenticated', 'true')
         localStorage.removeItem('gymnote_seen_welcome')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup failed:', error)
+      // Enhance error with user-friendly message if not already present
+      if (error?.statusCode === 409) {
+        error.data = error.data || {}
+        error.data.message = error.data.message || 'An account with this email already exists'
+      } else if (error?.statusCode === 400) {
+        error.data = error.data || {}
+        error.data.message = error.data.message || 'Please provide valid information'
+      } else if (!error?.data?.message && !error?.message) {
+        error.message = 'Unable to connect to server. Please check your connection.'
+      }
       throw error
     }
   }

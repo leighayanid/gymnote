@@ -1,11 +1,16 @@
 <template>
-  <NuxtLayout>
-    <NuxtPage />
-  </NuxtLayout>
+  <div>
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
+    <Toaster position="top-right" :theme="colorMode" richColors />
+  </div>
 </template>
 
 <script setup lang="ts">
-const { initTheme } = useTheme()
+import { Toaster } from 'vue-sonner'
+
+const { initTheme, colorMode } = useTheme()
 const { initAuth, isAuthenticated, hasSeenWelcome } = useAuth()
 const router = useRouter()
 const route = useRoute()

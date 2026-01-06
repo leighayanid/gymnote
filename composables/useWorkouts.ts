@@ -4,6 +4,7 @@ import type { LocalWorkout, LocalExercise } from '~/types'
 export const useWorkouts = () => {
   const workouts = useState<LocalWorkout[]>('workouts', () => [])
   const loading = useState('workouts-loading', () => false)
+  const toast = useToast()
 
   const generateLocalId = () => `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
@@ -27,6 +28,7 @@ export const useWorkouts = () => {
       )
     } catch (error) {
       console.error('Failed to load workouts:', error)
+      toast.error('Failed to load workouts', 'Please refresh the page to try again')
     } finally {
       loading.value = false
     }
@@ -53,60 +55,68 @@ export const useWorkouts = () => {
       notes?: string
     }>
   }): Promise<LocalWorkout> => {
-    await localDB.init()
+    try {
+      await localDB.init()
 
-    const localId = generateLocalId()
-    const now = new Date()
+      const localId = generateLocalId()
+      const now = new Date()
 
-    const workout: LocalWorkout = {
-      localId,
-      serverId: null,
-      syncStatus: 'pending',
-      date: data.date,
-      notes: data.notes || null,
-      exercises: [],
-      createdAt: now,
-      updatedAt: now
-    }
-
-    // Save workout
-    await localDB.saveWorkout(workout)
-
-    // Save exercises
-    const exercises: LocalExercise[] = []
-    for (const exerciseData of data.exercises) {
-      const exercise: LocalExercise = {
-        localId: generateLocalId(),
+      const workout: LocalWorkout = {
+        localId,
         serverId: null,
-        workoutLocalId: localId,
-        name: exerciseData.name,
-        sets: exerciseData.sets,
-        reps: exerciseData.reps,
-        weight: exerciseData.weight || null,
-        notes: exerciseData.notes || null
+        syncStatus: 'pending',
+        date: data.date,
+        notes: data.notes || null,
+        exercises: [],
+        createdAt: now,
+        updatedAt: now
       }
-      await localDB.saveExercise(exercise)
-      exercises.push(exercise)
+
+      // Save workout
+      await localDB.saveWorkout(workout)
+
+      // Save exercises
+      const exercises: LocalExercise[] = []
+      for (const exerciseData of data.exercises) {
+        const exercise: LocalExercise = {
+          localId: generateLocalId(),
+          serverId: null,
+          workoutLocalId: localId,
+          name: exerciseData.name,
+          sets: exerciseData.sets,
+          reps: exerciseData.reps,
+          weight: exerciseData.weight || null,
+          notes: exerciseData.notes || null
+        }
+        await localDB.saveExercise(exercise)
+        exercises.push(exercise)
+      }
+
+      workout.exercises = exercises
+
+      // Add to sync queue
+      const { addToSyncQueue } = useSync()
+      await addToSyncQueue({
+        id: generateLocalId(),
+        action: 'create',
+        entityType: 'workout',
+        entityId: localId,
+        data: workout,
+        timestamp: now,
+        retryCount: 0
+      })
+
+      // Reload workouts
+      await loadWorkouts()
+
+      toast.success('Workout created', 'Your workout has been saved successfully')
+
+      return workout
+    } catch (error) {
+      console.error('Failed to create workout:', error)
+      toast.error('Failed to create workout', 'Please try again')
+      throw error
     }
-
-    workout.exercises = exercises
-
-    // Add to sync queue
-    const { addToSyncQueue } = useSync()
-    await addToSyncQueue({
-      id: generateLocalId(),
-      action: 'create',
-      entityType: 'workout',
-      entityId: localId,
-      data: workout,
-      timestamp: now,
-      retryCount: 0
-    })
-
-    // Reload workouts
-    await loadWorkouts()
-
-    return workout
   }
 
   const updateWorkout = async (
@@ -124,83 +134,102 @@ export const useWorkouts = () => {
       }>
     }
   ): Promise<void> => {
-    await localDB.init()
+    try {
+      await localDB.init()
 
-    const workout = await localDB.getWorkout(localId)
-    if (!workout) throw new Error('Workout not found')
-
-    // Update workout
-    const updatedWorkout: LocalWorkout = {
-      ...workout,
-      date: data.date || workout.date,
-      notes: data.notes !== undefined ? data.notes : workout.notes,
-      syncStatus: 'pending',
-      updatedAt: new Date()
-    }
-
-    await localDB.saveWorkout(updatedWorkout)
-
-    // Update exercises if provided
-    if (data.exercises) {
-      // Delete old exercises
-      await localDB.deleteExercisesByWorkout(localId)
-
-      // Save new exercises
-      for (const exerciseData of data.exercises) {
-        const exercise: LocalExercise = {
-          localId: exerciseData.localId || generateLocalId(),
-          serverId: null,
-          workoutLocalId: localId,
-          name: exerciseData.name,
-          sets: exerciseData.sets,
-          reps: exerciseData.reps,
-          weight: exerciseData.weight || null,
-          notes: exerciseData.notes || null
-        }
-        await localDB.saveExercise(exercise)
+      const workout = await localDB.getWorkout(localId)
+      if (!workout) {
+        toast.error('Workout not found', 'Unable to update the workout')
+        throw new Error('Workout not found')
       }
-    }
 
-    // Add to sync queue
-    const { addToSyncQueue } = useSync()
-    await addToSyncQueue({
-      id: generateLocalId(),
-      action: 'update',
-      entityType: 'workout',
-      entityId: localId,
-      data: updatedWorkout,
-      timestamp: new Date(),
-      retryCount: 0
-    })
+      // Update workout
+      const updatedWorkout: LocalWorkout = {
+        ...workout,
+        date: data.date || workout.date,
+        notes: data.notes !== undefined ? data.notes : workout.notes,
+        syncStatus: 'pending',
+        updatedAt: new Date()
+      }
 
-    await loadWorkouts()
-  }
+      await localDB.saveWorkout(updatedWorkout)
 
-  const deleteWorkout = async (localId: string): Promise<void> => {
-    await localDB.init()
+      // Update exercises if provided
+      if (data.exercises) {
+        // Delete old exercises
+        await localDB.deleteExercisesByWorkout(localId)
 
-    // Delete exercises first
-    await localDB.deleteExercisesByWorkout(localId)
+        // Save new exercises
+        for (const exerciseData of data.exercises) {
+          const exercise: LocalExercise = {
+            localId: exerciseData.localId || generateLocalId(),
+            serverId: null,
+            workoutLocalId: localId,
+            name: exerciseData.name,
+            sets: exerciseData.sets,
+            reps: exerciseData.reps,
+            weight: exerciseData.weight || null,
+            notes: exerciseData.notes || null
+          }
+          await localDB.saveExercise(exercise)
+        }
+      }
 
-    // Delete workout
-    await localDB.deleteWorkout(localId)
-
-    // Add to sync queue if it has a serverId
-    const workout = workouts.value.find(w => w.localId === localId)
-    if (workout?.serverId) {
+      // Add to sync queue
       const { addToSyncQueue } = useSync()
       await addToSyncQueue({
         id: generateLocalId(),
-        action: 'delete',
+        action: 'update',
         entityType: 'workout',
         entityId: localId,
-        data: { serverId: workout.serverId },
+        data: updatedWorkout,
         timestamp: new Date(),
         retryCount: 0
       })
-    }
 
-    await loadWorkouts()
+      await loadWorkouts()
+
+      toast.success('Workout updated', 'Your changes have been saved')
+    } catch (error) {
+      console.error('Failed to update workout:', error)
+      toast.error('Failed to update workout', 'Please try again')
+      throw error
+    }
+  }
+
+  const deleteWorkout = async (localId: string): Promise<void> => {
+    try {
+      await localDB.init()
+
+      // Delete exercises first
+      await localDB.deleteExercisesByWorkout(localId)
+
+      // Delete workout
+      await localDB.deleteWorkout(localId)
+
+      // Add to sync queue if it has a serverId
+      const workout = workouts.value.find(w => w.localId === localId)
+      if (workout?.serverId) {
+        const { addToSyncQueue } = useSync()
+        await addToSyncQueue({
+          id: generateLocalId(),
+          action: 'delete',
+          entityType: 'workout',
+          entityId: localId,
+          data: { serverId: workout.serverId },
+          timestamp: new Date(),
+          retryCount: 0
+        })
+      }
+
+      await loadWorkouts()
+
+      toast.success('Workout deleted', 'The workout has been removed')
+    } catch (error) {
+      console.error('Failed to delete workout:', error)
+      toast.error('Failed to delete workout', 'Please try again')
+      throw error
+    }
   }
 
   return {

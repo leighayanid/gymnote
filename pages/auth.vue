@@ -217,6 +217,7 @@ definePageMeta({
 
 const { login, signup } = useAuth()
 const router = useRouter()
+const toast = useToast()
 
 const activeTab = ref<'login' | 'signup'>('login')
 
@@ -237,20 +238,22 @@ const formContainer = ref<HTMLElement>()
 const handleLogin = async () => {
   try {
     await login(loginForm.value.email, loginForm.value.password)
+    toast.success('Login successful', 'Welcome back!')
     await router.push('/welcome')
   } catch (error) {
     console.error('Login error:', error)
-    alert('Login failed. Please check your credentials and try again.')
+    toast.handleError(error, 'Login failed')
   }
 }
 
 const handleSignup = async () => {
   try {
     await signup(signupForm.value.name, signupForm.value.email, signupForm.value.password)
+    toast.success('Account created', 'Welcome to Gymnote!')
     await router.push('/welcome')
   } catch (error) {
     console.error('Signup error:', error)
-    alert('Signup failed. Please try again.')
+    toast.handleError(error, 'Signup failed')
   }
 }
 

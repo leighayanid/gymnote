@@ -29,6 +29,7 @@
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",
     "vue": "latest",
+    "vue-sonner": "^2.0.9",
     "zod": "^3.24.1"
   },
   "devDependencies": {
