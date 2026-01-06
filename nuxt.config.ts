@@ -8,6 +8,47 @@ export default defineNuxtConfig({
     '@vite-pwa/nuxt'
   ],
 
+  runtimeConfig: {
+    // Private keys (only available server-side)
+    jwtSecret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+    databaseUrl: process.env.DATABASE_URL,
+
+    // Public keys (exposed to client)
+    public: {
+      appName: 'Gymnote',
+      appVersion: '1.0.0',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api',
+    },
+  },
+
+  // Security headers
+  nitro: {
+    routeRules: {
+      '/**': {
+        headers: {
+          'X-Content-Type-Options': 'nosniff',
+          'X-Frame-Options': 'DENY',
+          'X-XSS-Protection': '1; mode=block',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+        },
+      },
+      '/api/**': {
+        cors: true,
+        headers: {
+          'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      },
+    },
+  },
+
+  // Optimize build
+  experimental: {
+    payloadExtraction: true,
+    renderJsonPayloads: true,
+  },
+
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
