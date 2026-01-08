@@ -56,7 +56,7 @@ const pendingCount = computed(() => {
 })
 
 const handleManualSync = async () => {
-  await syncData()
+  await syncData({ manual: true })
   await loadWorkouts()
 }
 

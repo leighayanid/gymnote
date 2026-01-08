@@ -17,7 +17,7 @@ export const useSync = () => {
     }
   }
 
-  const syncData = async () => {
+  const syncData = async (options: { manual?: boolean } = {}) => {
     if (syncing.value) return
     if (!isOnline.value) return
 
@@ -31,6 +31,8 @@ export const useSync = () => {
         syncing.value = false
         return
       }
+
+      console.log(`Starting ${options.manual ? 'manual' : 'automatic'} sync for ${queue.length} items`)
 
       // Group items by workout for batch processing
       const workoutItems = queue.filter(item => item.entityType === 'workout')
@@ -62,7 +64,9 @@ export const useSync = () => {
             await localDB.addToSyncQueue(item)
           } else {
             console.error('Max retries reached for item:', item)
-            toast.error('Sync failed', 'Some workouts could not be synced. Please check your connection.')
+            if (options.manual) {
+              toast.error('Sync failed', 'Some workouts could not be synced. Please check your connection.')
+            }
             // Mark as failed but keep in queue for manual retry
           }
         }
@@ -70,13 +74,17 @@ export const useSync = () => {
 
       lastSyncTime.value = new Date()
 
-      // Show success message only if we synced items and had no failures
-      if (successCount > 0 && !hasFailures) {
+      console.log(`Sync complete: ${successCount} items synced, ${hasFailures ? 'with failures' : 'no failures'}`)
+
+      // Show success message only for manual syncs or if we synced items with failures
+      if (options.manual && successCount > 0) {
         toast.success('Sync complete', `${successCount} workout${successCount > 1 ? 's' : ''} synced successfully`)
       }
     } catch (error) {
       console.error('Sync failed:', error)
-      toast.error('Sync error', 'Unable to sync your workouts. Please try again later.')
+      if (options.manual) {
+        toast.error('Sync error', 'Unable to sync your workouts. Please try again later.')
+      }
     } finally {
       syncing.value = false
     }
@@ -167,8 +175,15 @@ export const useSync = () => {
   // Auto-sync when coming online
   const setupAutoSync = () => {
     if (import.meta.client) {
+      // Initial sync on setup if online
+      if (isOnline.value) {
+        syncData()
+      }
+
+      // Watch for online status changes
       watch(isOnline, (online) => {
         if (online) {
+          console.log('Network came online, triggering sync...')
           syncData()
         }
       })
@@ -176,6 +191,7 @@ export const useSync = () => {
       // Periodic sync every 5 minutes when online
       setInterval(() => {
         if (isOnline.value) {
+          console.log('Periodic sync triggered')
           syncData()
         }
       }, 5 * 60 * 1000)
