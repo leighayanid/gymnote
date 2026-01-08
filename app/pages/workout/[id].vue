@@ -41,6 +41,13 @@
           </div>
         </div>
         <button
+          v-if="!isEditing"
+          @click="isEditing = true"
+          class="w-10 h-10 flex items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900 transition-colors"
+        >
+          <PencilIcon class="w-5 h-5" />
+        </button>
+        <button
           @click="confirmDelete = true"
           class="w-10 h-10 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 transition-colors"
         >
@@ -114,14 +121,20 @@
       </UiCard>
 
       <!-- Notes Card -->
-      <UiCard v-if="workout.notes">
+      <UiCard v-if="workout.notes || isEditing">
         <template #header>
           <div class="flex items-center gap-2">
             <DocumentTextIcon class="w-5 h-5 text-primary-500" />
             <h3 class="font-semibold text-gray-900 dark:text-white">Notes</h3>
           </div>
         </template>
-        <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ workout.notes }}</p>
+        <UiTextArea
+          v-if="isEditing"
+          v-model="editForm.notes"
+          placeholder="Optional workout notes..."
+          :rows="3"
+        />
+        <p v-else class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ workout.notes }}</p>
       </UiCard>
 
       <!-- Exercises Card -->
@@ -140,22 +153,65 @@
 
         <div class="space-y-3">
           <div
-            v-for="(exercise, index) in workout.exercises"
+            v-for="(exercise, index) in (isEditing ? editForm.exercises : workout.exercises)"
             :key="exercise.localId"
             class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700"
           >
             <div class="flex items-start justify-between mb-3">
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-3 flex-1">
                 <div class="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
                   <span class="text-primary-600 dark:text-primary-400 font-bold text-sm">{{ index + 1 }}</span>
                 </div>
-                <h3 class="font-semibold text-gray-900 dark:text-white text-lg">
+                <UiInput
+                  v-if="isEditing"
+                  v-model="editForm.exercises[index].name"
+                  placeholder="Exercise name"
+                  class="flex-1"
+                />
+                <h3 v-else class="font-semibold text-gray-900 dark:text-white text-lg">
                   {{ exercise.name }}
                 </h3>
               </div>
+              <button
+                v-if="isEditing && editForm.exercises.length > 1"
+                @click="removeExercise(index)"
+                class="ml-2 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
+              >
+                <TrashIcon class="w-5 h-5" />
+              </button>
             </div>
 
-            <div class="grid grid-cols-3 gap-3">
+            <div v-if="isEditing" class="grid grid-cols-3 gap-3">
+              <div class="space-y-1">
+                <label class="text-xs text-gray-600 dark:text-gray-400 block">Sets</label>
+                <UiInput
+                  v-model.number="editForm.exercises[index].sets"
+                  type="number"
+                  :min="1"
+                  class="text-center"
+                />
+              </div>
+              <div class="space-y-1">
+                <label class="text-xs text-gray-600 dark:text-gray-400 block">Reps</label>
+                <UiInput
+                  v-model.number="editForm.exercises[index].reps"
+                  type="number"
+                  :min="1"
+                  class="text-center"
+                />
+              </div>
+              <div class="space-y-1">
+                <label class="text-xs text-gray-600 dark:text-gray-400 block">Weight (kg)</label>
+                <UiInput
+                  v-model.number="editForm.exercises[index].weight"
+                  type="number"
+                  :min="0"
+                  class="text-center"
+                />
+              </div>
+            </div>
+
+            <div v-else class="grid grid-cols-3 gap-3">
               <div class="text-center p-3 bg-white dark:bg-gray-900 rounded-lg">
                 <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ exercise.sets }}</div>
                 <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Sets</div>
@@ -174,12 +230,48 @@
               </div>
             </div>
 
-            <div v-if="exercise.notes" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <p class="text-sm text-gray-600 dark:text-gray-400 italic">{{ exercise.notes }}</p>
+            <div v-if="exercise.notes || isEditing" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <UiTextArea
+                v-if="isEditing"
+                v-model="editForm.exercises[index].notes"
+                placeholder="Optional exercise notes..."
+                :rows="2"
+              />
+              <p v-else class="text-sm text-gray-600 dark:text-gray-400 italic">{{ exercise.notes }}</p>
             </div>
           </div>
         </div>
+
+        <!-- Edit Mode Actions -->
+        <div v-if="isEditing" class="flex gap-3 pt-4">
+          <UiButton
+            @click="addExercise"
+            variant="outline"
+            full-width
+            :icon="PlusCircleIcon"
+          >
+            Add Exercise
+          </UiButton>
+        </div>
       </UiCard>
+
+      <!-- Save/Cancel Buttons -->
+      <div v-if="isEditing" class="flex gap-3">
+        <UiButton
+          @click="cancelEdit"
+          variant="secondary"
+          class="flex-1"
+        >
+          Cancel
+        </UiButton>
+        <UiButton
+          @click="saveChanges"
+          variant="primary"
+          class="flex-1"
+        >
+          Save Changes
+        </UiButton>
+      </div>
     </div>
 
     <!-- Delete Confirmation Modal -->
@@ -231,17 +323,35 @@ import {
   ClockIcon,
   DocumentTextIcon,
   RectangleStackIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  PencilIcon,
+  PlusCircleIcon
 } from '@heroicons/vue/24/outline'
 import type { LocalWorkout } from '~/types'
 
 const route = useRoute()
 const router = useRouter()
-const { getWorkout, deleteWorkout } = useWorkouts()
+const toast = useToast()
+const { getWorkout, deleteWorkout, updateWorkout } = useWorkouts()
 
 const workout = ref<LocalWorkout | undefined>()
 const loading = ref(true)
 const confirmDelete = ref(false)
+const isEditing = ref(false)
+const editForm = ref<{
+  notes: string
+  exercises: Array<{
+    localId: string
+    name: string
+    sets: number
+    reps: number
+    weight: number
+    notes?: string
+  }>
+}>({
+  notes: '',
+  exercises: []
+})
 
 const formatDate = (date: Date) => {
   return new Date(date).toLocaleDateString('en-US', {
@@ -260,6 +370,61 @@ const handleDelete = async () => {
     router.push('/history')
   }
 }
+
+const addExercise = () => {
+  editForm.value.exercises.push({
+    localId: crypto.randomUUID(),
+    name: '',
+    sets: 3,
+    reps: 10,
+    weight: 0
+  })
+}
+
+const removeExercise = (index: number) => {
+  editForm.value.exercises.splice(index, 1)
+}
+
+const cancelEdit = () => {
+  isEditing.value = false
+  // Reset form to current workout data
+  if (workout.value) {
+    editForm.value = {
+      notes: workout.value.notes || '',
+      exercises: workout.value.exercises.map(e => ({ ...e }))
+    }
+  }
+}
+
+const saveChanges = async () => {
+  if (!workout.value) return
+
+  const validExercises = editForm.value.exercises.filter(e => e.name.trim() !== '')
+
+  if (validExercises.length === 0) {
+    toast.error('At least one exercise is required')
+    return
+  }
+
+  await updateWorkout(workout.value.localId, {
+    notes: editForm.value.notes || undefined,
+    exercises: validExercises
+  })
+
+  // Reload workout data
+  workout.value = await getWorkout(workout.value.localId)
+  isEditing.value = false
+  toast.success('Workout updated successfully')
+}
+
+watch(() => workout.value, (newWorkout) => {
+  if (newWorkout) {
+    editForm.value = {
+      notes: newWorkout.notes || '',
+      exercises: newWorkout.exercises.map(e => ({ ...e }))
+    }
+  }
+}, { immediate: true })
 
 onMounted(async () => {
   const id = route.params.id as string

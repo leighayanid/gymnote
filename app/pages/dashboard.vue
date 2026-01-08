@@ -151,7 +151,7 @@ onMounted(async () => {
     </div>
 
     <!-- Templates Section -->
-    <div v-if="!templatesLoading && templates.length > 0" class="space-y-4">
+    <div class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           <SparklesIcon class="w-6 h-6 text-primary-500" />
@@ -159,7 +159,20 @@ onMounted(async () => {
         </h2>
       </div>
 
-      <div class="grid grid-cols-2 gap-3">
+      <!-- Templates Loading State -->
+      <div v-if="templatesLoading" class="grid grid-cols-2 gap-3">
+        <div
+          v-for="i in 4"
+          :key="i"
+          class="bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 animate-pulse"
+        >
+          <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
+          <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+        </div>
+      </div>
+
+      <!-- Templates List -->
+      <div v-else-if="templates.length > 0" class="grid grid-cols-2 gap-3">
         <button
           v-for="template in templates"
           :key="template.id"
@@ -176,26 +189,10 @@ onMounted(async () => {
           </div>
         </button>
       </div>
-    </div>
 
-    <!-- Templates Loading State -->
-    <div v-else-if="templatesLoading" class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-          <SparklesIcon class="w-6 h-6 text-primary-500" />
-          Quick Start Templates
-        </h2>
-      </div>
-
-      <div class="grid grid-cols-2 gap-3">
-        <div
-          v-for="i in 4"
-          :key="i"
-          class="bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 animate-pulse"
-        >
-          <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
-          <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-        </div>
+      <!-- Empty State -->
+      <div v-else class="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-xl">
+        <p class="text-gray-600 dark:text-gray-400">No templates available</p>
       </div>
     </div>
 
