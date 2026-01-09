@@ -1,7 +1,7 @@
 import type { LocalWorkout, LocalExercise, SyncQueueItem, WorkoutTemplate } from '~/types'
 
 const DB_NAME = 'ryne-db'
-const DB_VERSION = 2 // Incremented for exercise cache
+const DB_VERSION = 3 // Incremented for workout status, template metadata, rest timer, exercise history
 
 export class LocalDB {
   private db: IDBDatabase | null = null
@@ -18,6 +18,7 @@ export class LocalDB {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result
+        const oldVersion = (event as IDBVersionChangeEvent).oldVersion
 
         // Workouts store
         if (!db.objectStoreNames.contains('workouts')) {
@@ -25,6 +26,16 @@ export class LocalDB {
           workoutStore.createIndex('serverId', 'serverId', { unique: false })
           workoutStore.createIndex('date', 'date', { unique: false })
           workoutStore.createIndex('syncStatus', 'syncStatus', { unique: false })
+          workoutStore.createIndex('status', 'status', { unique: false })
+        } else if (oldVersion < 3) {
+          // Add status index to existing workouts store
+          const transaction = (event.target as IDBOpenDBRequest).transaction
+          if (transaction) {
+            const workoutStore = transaction.objectStore('workouts')
+            if (!workoutStore.indexNames.contains('status')) {
+              workoutStore.createIndex('status', 'status', { unique: false })
+            }
+          }
         }
 
         // Exercises store
@@ -50,6 +61,11 @@ export class LocalDB {
           const cacheStore = db.createObjectStore('exercise_cache', { keyPath: 'name' })
           cacheStore.createIndex('searchCount', 'searchCount', { unique: false })
           cacheStore.createIndex('cachedAt', 'cachedAt', { unique: false })
+        }
+
+        // Rest timer settings store
+        if (!db.objectStoreNames.contains('rest_timer_settings')) {
+          db.createObjectStore('rest_timer_settings', { keyPath: 'id' })
         }
       }
     })
@@ -285,6 +301,45 @@ export class LocalDB {
           resolve()
         }
       }
+      request.onerror = () => reject(request.error)
+    })
+  }
+
+  // Rest Timer Settings
+  async getRestTimerSettings(): Promise<any | undefined> {
+    const store = this.getStore('rest_timer_settings')
+    return new Promise((resolve, reject) => {
+      const request = store.get('default')
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+  }
+
+  async saveRestTimerSettings(settings: any): Promise<void> {
+    const store = this.getStore('rest_timer_settings', 'readwrite')
+    return new Promise((resolve, reject) => {
+      const request = store.put({ id: 'default', ...settings })
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
+  }
+
+  // Exercise History Queries
+  async getExerciseHistory(exerciseName: string): Promise<LocalExercise[]> {
+    const exercises = await this.getAllExercises()
+    return exercises
+      .filter(ex => ex.name.toLowerCase() === exerciseName.toLowerCase())
+      .sort((a, b) => {
+        // We'll need to look up workout dates, this is a simplified version
+        return 0
+      })
+  }
+
+  async getAllExercises(): Promise<LocalExercise[]> {
+    const store = this.getStore('exercises')
+    return new Promise((resolve, reject) => {
+      const request = store.getAll()
+      request.onsuccess = () => resolve(request.result)
       request.onerror = () => reject(request.error)
     })
   }

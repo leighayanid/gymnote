@@ -15,17 +15,28 @@ import {
   ClockIcon,
   RocketLaunchIcon,
   PlusIcon,
-  TrashIcon
+  TrashIcon,
+  ChartBarIcon
 } from '@heroicons/vue/24/outline'
+import { formatDistanceToNow } from 'date-fns'
+import type { QuickEntryParsed } from '~/types'
 
 const { templates, loading: templatesLoading, loadTemplates, createWorkoutFromTemplate } = useTemplates()
-const { workouts, loadWorkouts, createWorkout } = useWorkouts()
+const { workouts, loadWorkouts, createWorkout, getLastCompletedWorkout } = useWorkouts()
+const { getWeeklyVolumeData } = useVolumeStats()
+const { syncData } = useSync()
+const { setupPullToRefresh, isPulling, pullDistance, isThresholdReached, pullProgress } = usePullToRefresh()
 
 const showNewWorkout = ref(false)
 const newWorkoutNotes = ref('')
 const newWorkoutExercises = ref([
   { name: '', sets: 3, reps: 10, weight: 0 }
 ])
+const quickEntryRef = ref<any>(null)
+const activeTab = ref<'in_progress' | 'completed'>('in_progress')
+const lastWorkout = ref<any>(null)
+const volumeData = ref<any[]>([])
+const volumeLoading = ref(true)
 
 const formattedDate = computed(() => {
   const now = new Date()
@@ -43,10 +54,13 @@ const todayWorkouts = computed(() => {
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
 
-  return workouts.value.filter(w => {
-    const workoutDate = new Date(w.date)
-    return workoutDate >= today && workoutDate < tomorrow
-  })
+  return workouts.value
+    .filter(w => {
+      const workoutDate = new Date(w.date)
+      const matchesDate = workoutDate >= today && workoutDate < tomorrow
+      const matchesStatus = w.status === activeTab.value
+      return matchesDate && matchesStatus
+    })
 })
 
 const canSaveWorkout = computed(() => {
@@ -60,6 +74,15 @@ const formatTime = (date: Date) => {
   })
 }
 
+const formatLastUsed = (date: Date | null) => {
+  if (!date) return 'Never used'
+  try {
+    return formatDistanceToNow(new Date(date), { addSuffix: true })
+  } catch {
+    return 'Recently'
+  }
+}
+
 const addExercise = () => {
   newWorkoutExercises.value.push({ name: '', sets: 3, reps: 10, weight: 0 })
 }
@@ -71,14 +94,13 @@ const removeExercise = (index: number) => {
 const startFromTemplate = async (templateId: string) => {
   await createWorkoutFromTemplate(templateId)
   await loadWorkouts()
+  await loadTemplates() // Reload to update lastUsed
 }
 
 const handleExerciseSelect = (index: number, selected: any) => {
   if (selected) {
-    // Exercise selected from API/cache - use the name
     newWorkoutExercises.value[index].name = selected.name
   }
-  // If selected is null, user is using custom exercise name, which is already in the model
 }
 
 const saveNewWorkout = async () => {
@@ -98,13 +120,77 @@ const saveNewWorkout = async () => {
   await loadWorkouts()
 }
 
+const handleQuickEntryAdd = async (parsed: QuickEntryParsed) => {
+  // Add exercise to new workout
+  await createWorkout({
+    date: new Date(),
+    exercises: [{
+      name: parsed.name,
+      sets: parsed.sets || 3,
+      reps: parsed.reps || 10,
+      weight: parsed.weight || undefined
+    }]
+  })
+
+  await loadWorkouts()
+}
+
+const handleRepeatWorkout = async (workout: any) => {
+  await createWorkout({
+    date: new Date(),
+    notes: `Repeated from ${formatDistanceToNow(new Date(workout.date), { addSuffix: true })}`,
+    exercises: workout.exercises.map((e: any) => ({
+      name: e.name,
+      sets: e.sets,
+      reps: e.reps,
+      weight: e.weight
+    }))
+  })
+
+  await loadWorkouts()
+}
+
+const handleViewWorkout = (workout: any) => {
+  navigateTo(`/workout/${workout.localId}`)
+}
+
+const handleFABClick = () => {
+  showNewWorkout.value = true
+}
+
+const handlePullToSync = async () => {
+  await syncData({ manual: true })
+  await loadWorkouts()
+}
+
+const loadVolumeData = async () => {
+  volumeLoading.value = true
+  try {
+    const data = await getWeeklyVolumeData(4)
+    volumeData.value = data
+  } catch (error) {
+    console.error('Failed to load volume data:', error)
+  } finally {
+    volumeLoading.value = false
+  }
+}
+
 onMounted(async () => {
   await loadTemplates()
   await loadWorkouts()
 
+  // Load last workout
+  lastWorkout.value = await getLastCompletedWorkout()
+
+  // Load volume data
+  await loadVolumeData()
+
+  // Setup pull-to-refresh
+  const cleanup = setupPullToRefresh(handlePullToSync)
+  onUnmounted(cleanup)
+
   // Animate page elements on mount
   nextTick(() => {
-    // Animate header
     gsap.from('.space-y-2', {
       y: -20,
       opacity: 0,
@@ -112,7 +198,6 @@ onMounted(async () => {
       ease: 'power2.out'
     })
 
-    // Animate template cards
     const templateCards = document.querySelectorAll('.grid.grid-cols-2 > button')
     gsap.from(templateCards, {
       scale: 0.8,
@@ -123,7 +208,6 @@ onMounted(async () => {
       delay: 0.2
     })
 
-    // Animate workout cards if they exist
     const workoutCards = document.querySelectorAll('.space-y-3 > a')
     if (workoutCards.length > 0) {
       gsap.from(workoutCards, {
@@ -141,6 +225,17 @@ onMounted(async () => {
 
 <template>
   <div class="max-w-screen-xl mx-auto px-4 py-6 space-y-6">
+    <!-- Pull-to-Sync Indicator -->
+    <PullToSyncIndicator
+      :is-pulling="isPulling"
+      :pull-distance="pullDistance"
+      :is-threshold-reached="isThresholdReached"
+      :pull-progress="pullProgress"
+    />
+
+    <!-- FAB -->
+    <FAB @click="handleFABClick" />
+
     <!-- Page Header -->
     <div class="space-y-2">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Today's Workout</h1>
@@ -148,6 +243,31 @@ onMounted(async () => {
         <CalendarIcon class="w-5 h-5" />
         <p>{{ formattedDate }}</p>
       </div>
+    </div>
+
+    <!-- Last Workout Card -->
+    <LastWorkoutCard
+      v-if="lastWorkout"
+      :workout="lastWorkout"
+      @repeat="handleRepeatWorkout"
+      @view-full="handleViewWorkout"
+    />
+
+    <!-- Volume Chart -->
+    <div v-if="volumeData.length > 0" class="space-y-4">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <ChartBarIcon class="w-7 h-7 text-primary-500" />
+        Weekly Volume
+      </h2>
+      <UiCard>
+        <VolumeChart :data="volumeData" :height="300" />
+      </UiCard>
+    </div>
+
+    <!-- Quick Entry Input -->
+    <div class="space-y-2">
+      <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Quick Add Exercise</h3>
+      <QuickEntryInput ref="quickEntryRef" @add="handleQuickEntryAdd" />
     </div>
 
     <!-- Templates Section -->
@@ -198,10 +318,16 @@ onMounted(async () => {
             {{ template.name }}
           </h3>
 
-          <!-- Exercise Count -->
-          <div class="relative flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
-            <RectangleStackIcon class="w-5 h-5 text-primary-500" />
-            <span>{{ template.exercises.length }} exercises</span>
+          <!-- Exercise Count & Last Used -->
+          <div class="relative space-y-2 mb-4">
+            <div class="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400">
+              <RectangleStackIcon class="w-5 h-5 text-primary-500" />
+              <span>{{ template.exercises.length }} exercises</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500">
+              <ClockIcon class="w-4 h-4" />
+              <span>{{ formatLastUsed(template.lastUsed) }}</span>
+            </div>
           </div>
 
           <!-- Exercise Preview -->
@@ -259,12 +385,42 @@ onMounted(async () => {
     </UiButton>
 
     <!-- Today's Workouts -->
-    <div v-if="todayWorkouts.length > 0" class="space-y-4">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-        <BoltIcon class="w-6 h-6 text-primary-500" />
-        Today's Sessions
-      </h2>
-      <div class="space-y-3">
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <BoltIcon class="w-6 h-6 text-primary-500" />
+          Today's Sessions
+        </h2>
+      </div>
+
+      <!-- Status Tabs -->
+      <div class="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+        <button
+          @click="activeTab = 'in_progress'"
+          :class="[
+            'px-4 py-2 text-sm font-semibold transition-colors border-b-2',
+            activeTab === 'in_progress'
+              ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          ]"
+        >
+          In Progress
+        </button>
+        <button
+          @click="activeTab = 'completed'"
+          :class="[
+            'px-4 py-2 text-sm font-semibold transition-colors border-b-2',
+            activeTab === 'completed'
+              ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          ]"
+        >
+          Completed
+        </button>
+      </div>
+
+      <!-- Workout List -->
+      <div v-if="todayWorkouts.length > 0" class="space-y-3">
         <NuxtLink
           v-for="workout in todayWorkouts"
           :key="workout.localId"
@@ -278,21 +434,35 @@ onMounted(async () => {
                   {{ formatTime(workout.date) }}
                 </div>
               </div>
-              <div
-                class="text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1"
-                :class="[
-                  workout.syncStatus === 'synced'
-                    ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400'
-                    : workout.syncStatus === 'pending'
-                    ? 'bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400'
-                    : 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400'
-                ]"
-              >
-                <div class="w-1.5 h-1.5 rounded-full" :class="[
-                  workout.syncStatus === 'synced' ? 'bg-green-500' :
-                  workout.syncStatus === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
-                ]"></div>
-                {{ workout.syncStatus }}
+              <div class="flex items-center gap-2">
+                <!-- Status badge -->
+                <div
+                  class="text-xs px-2.5 py-1 rounded-full font-medium"
+                  :class="[
+                    workout.status === 'completed'
+                      ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400'
+                      : 'bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400'
+                  ]"
+                >
+                  {{ workout.status === 'completed' ? 'Completed' : 'In Progress' }}
+                </div>
+                <!-- Sync badge -->
+                <div
+                  class="text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1"
+                  :class="[
+                    workout.syncStatus === 'synced'
+                      ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400'
+                      : workout.syncStatus === 'pending'
+                      ? 'bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400'
+                      : 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400'
+                  ]"
+                >
+                  <div class="w-1.5 h-1.5 rounded-full" :class="[
+                    workout.syncStatus === 'synced' ? 'bg-green-500' :
+                    workout.syncStatus === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
+                  ]"></div>
+                  {{ workout.syncStatus }}
+                </div>
               </div>
             </div>
             <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -305,15 +475,17 @@ onMounted(async () => {
           </UiCard>
         </NuxtLink>
       </div>
-    </div>
 
-    <!-- Empty State -->
-    <div v-else class="text-center py-12">
-      <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-        <RocketLaunchIcon class="w-8 h-8 text-gray-400 dark:text-gray-500" />
+      <!-- Empty State -->
+      <div v-else class="text-center py-12">
+        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+          <RocketLaunchIcon class="w-8 h-8 text-gray-400 dark:text-gray-500" />
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          No {{ activeTab === 'in_progress' ? 'in progress' : 'completed' }} workouts today
+        </h3>
+        <p class="text-gray-600 dark:text-gray-400">Start with a template or create a custom workout</p>
       </div>
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No workouts yet today</h3>
-      <p class="text-gray-600 dark:text-gray-400">Start with a template or create a custom workout</p>
     </div>
 
     <!-- New Workout Modal -->

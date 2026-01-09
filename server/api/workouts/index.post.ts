@@ -22,6 +22,7 @@ export default defineEventHandler(async (event) => {
         userId: user.id,
         date: new Date(validatedData.date),
         notes: validatedData.notes,
+        status: validatedData.status,
         exercises: {
           create: validatedData.exercises.map((exercise) => ({
             name: exercise.name,

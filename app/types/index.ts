@@ -1,9 +1,11 @@
 export type SyncStatus = 'pending' | 'synced' | 'failed'
+export type WorkoutStatus = 'in_progress' | 'completed'
 
 export interface LocalWorkout {
   localId: string
   serverId: string | null
   syncStatus: SyncStatus
+  status: WorkoutStatus
   date: Date
   notes: string | null
   exercises: LocalExercise[]
@@ -35,6 +37,8 @@ export interface SyncQueueItem {
 export interface WorkoutTemplate {
   id: string
   name: string
+  lastUsed: Date | null
+  usageCount: number
   exercises: {
     name: string
     sets: number
@@ -69,4 +73,29 @@ export interface ExerciseAPIResponse {
   target: string
   equipment: string
   gifUrl: string
+}
+
+// Exercise history types
+export interface ExerciseHistoryEntry {
+  workoutDate: Date
+  sets: number
+  reps: number
+  weight: number | null
+  notes: string | null
+}
+
+// Rest timer types
+export interface RestTimerSettings {
+  enabled: boolean
+  defaultDuration: number // seconds (default: 120)
+  soundEnabled: boolean
+  vibrationEnabled: boolean
+}
+
+// Quick entry parser types
+export interface QuickEntryParsed {
+  name: string
+  sets: number | null
+  reps: number | null
+  weight: number | null
 }

@@ -8,11 +8,16 @@ export const useWorkouts = () => {
 
   const generateLocalId = () => `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
-  const loadWorkouts = async () => {
+  const loadWorkouts = async (statusFilter?: 'in_progress' | 'completed') => {
     loading.value = true
     try {
       await localDB.init()
-      const allWorkouts = await localDB.getWorkouts()
+      let allWorkouts = await localDB.getWorkouts()
+
+      // Filter by status if provided
+      if (statusFilter) {
+        allWorkouts = allWorkouts.filter(w => w.status === statusFilter)
+      }
 
       // Load exercises for each workout
       const workoutsWithExercises = await Promise.all(
@@ -47,6 +52,7 @@ export const useWorkouts = () => {
   const createWorkout = async (data: {
     date: Date
     notes?: string
+    status?: 'in_progress' | 'completed'
     exercises: Array<{
       name: string
       sets: number
@@ -65,6 +71,7 @@ export const useWorkouts = () => {
         localId,
         serverId: null,
         syncStatus: 'pending',
+        status: data.status || 'in_progress',
         date: data.date,
         notes: data.notes || null,
         exercises: [],
@@ -124,6 +131,7 @@ export const useWorkouts = () => {
     data: {
       date?: Date
       notes?: string
+      status?: 'in_progress' | 'completed'
       exercises?: Array<{
         localId?: string
         name: string
@@ -148,6 +156,7 @@ export const useWorkouts = () => {
         ...workout,
         date: data.date || workout.date,
         notes: data.notes !== undefined ? data.notes : workout.notes,
+        status: data.status || workout.status,
         syncStatus: 'pending',
         updatedAt: new Date()
       }
@@ -232,6 +241,66 @@ export const useWorkouts = () => {
     }
   }
 
+  const getLastCompletedWorkout = async (): Promise<LocalWorkout | null> => {
+    try {
+      await localDB.init()
+      const allWorkouts = await localDB.getWorkouts()
+
+      // Filter completed workouts and sort by date descending
+      const completedWorkouts = allWorkouts
+        .filter(w => w.status === 'completed')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+      if (completedWorkouts.length === 0) return null
+
+      const workout = completedWorkouts[0]
+      const exercises = await localDB.getExercisesByWorkout(workout.localId)
+      return { ...workout, exercises }
+    } catch (error) {
+      console.error('Failed to get last completed workout:', error)
+      return null
+    }
+  }
+
+  const getPreviousWorkout = async (exerciseName: string): Promise<LocalWorkout | null> => {
+    try {
+      await localDB.init()
+      const allWorkouts = await localDB.getWorkouts()
+
+      // Sort by date descending
+      const sortedWorkouts = allWorkouts.sort((a, b) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      )
+
+      // Find workout containing this exercise
+      for (const workout of sortedWorkouts) {
+        const exercises = await localDB.getExercisesByWorkout(workout.localId)
+        const hasExercise = exercises.some(
+          ex => ex.name.toLowerCase() === exerciseName.toLowerCase()
+        )
+
+        if (hasExercise) {
+          return { ...workout, exercises }
+        }
+      }
+
+      return null
+    } catch (error) {
+      console.error('Failed to get previous workout:', error)
+      return null
+    }
+  }
+
+  const markWorkoutCompleted = async (localId: string): Promise<void> => {
+    await updateWorkout(localId, { status: 'completed' })
+    toast.success('Workout completed', 'Great job! 💪')
+  }
+
+  const markWorkoutInProgress = async (localId: string): Promise<void> => {
+    await updateWorkout(localId, { status: 'in_progress' })
+    toast.info('Workout reopened', 'You can continue editing')
+  }
+
   return {
     workouts,
     loading,
@@ -239,6 +308,10 @@ export const useWorkouts = () => {
     getWorkout,
     createWorkout,
     updateWorkout,
-    deleteWorkout
+    deleteWorkout,
+    getLastCompletedWorkout,
+    getPreviousWorkout,
+    markWorkoutCompleted,
+    markWorkoutInProgress
   }
 }

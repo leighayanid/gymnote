@@ -55,6 +55,7 @@ export default defineEventHandler(async (event) => {
       data: {
         ...(validatedData.date && { date: new Date(validatedData.date) }),
         ...(validatedData.notes !== undefined && { notes: validatedData.notes }),
+        ...(validatedData.status && { status: validatedData.status }),
         ...(validatedData.exercises && {
           exercises: {
             create: validatedData.exercises.map((exercise) => ({

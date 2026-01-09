@@ -42,12 +42,14 @@ model Workout {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      DateTime
   notes     String?
+  status    String     @default("in_progress")
   exercises Exercise[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
   @@index([userId])
   @@index([date])
+  @@index([status])
 }
 
 model Exercise {

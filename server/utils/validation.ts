@@ -24,6 +24,7 @@ export const refreshTokenSchema = z.object({
 export const createWorkoutSchema = z.object({
   date: z.string().datetime().or(z.date()),
   notes: z.string().max(1000).optional(),
+  status: z.enum(['in_progress', 'completed']).default('in_progress'),
   exercises: z.array(
     z.object({
       name: z.string().min(1, 'Exercise name is required').max(200),
@@ -38,6 +39,7 @@ export const createWorkoutSchema = z.object({
 export const updateWorkoutSchema = z.object({
   date: z.string().datetime().or(z.date()).optional(),
   notes: z.string().max(1000).optional().nullable(),
+  status: z.enum(['in_progress', 'completed']).optional(),
   exercises: z.array(
     z.object({
       name: z.string().min(1).max(200),

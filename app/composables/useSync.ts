@@ -98,6 +98,7 @@ export const useSync = () => {
       body: {
         date: workout.date,
         notes: workout.notes,
+        status: workout.status,
         exercises: workout.exercises.map((e: any) => ({
           name: e.name,
           sets: e.sets,
@@ -144,6 +145,7 @@ export const useSync = () => {
       body: {
         date: workout.date,
         notes: workout.notes,
+        status: workout.status,
         exercises: workout.exercises.map((e: any) => ({
           name: e.name,
           sets: e.sets,
