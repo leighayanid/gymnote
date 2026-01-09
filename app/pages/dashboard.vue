@@ -153,46 +153,90 @@ onMounted(async () => {
     <!-- Templates Section -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-          <SparklesIcon class="w-6 h-6 text-primary-500" />
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <SparklesIcon class="w-7 h-7 text-primary-500" />
           Quick Start Templates
         </h2>
       </div>
 
       <!-- Templates Loading State -->
-      <div v-if="templatesLoading" class="grid grid-cols-2 gap-3">
+      <div v-if="templatesLoading" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div
           v-for="i in 4"
           :key="i"
-          class="bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 animate-pulse"
+          class="bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-6 animate-pulse"
         >
-          <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
-          <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+          <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+          <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-3"></div>
+          <div class="space-y-2">
+            <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          </div>
         </div>
       </div>
 
       <!-- Templates List -->
-      <div v-else-if="templates.length > 0" class="grid grid-cols-2 gap-3">
+      <div v-else-if="templates.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <button
           v-for="template in templates"
           :key="template.id"
           @click="startFromTemplate(template.id)"
-          class="group relative bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950 dark:to-primary-900 border-2 border-primary-200 dark:border-primary-800 rounded-xl p-4 text-left hover:border-primary-400 dark:hover:border-primary-600 hover:shadow-lg transition-all active:scale-95"
+          class="group relative bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-6 text-left hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 active:scale-98 overflow-hidden"
         >
-          <div class="absolute top-3 right-3">
-            <FireIcon class="w-5 h-5 text-primary-500 dark:text-primary-400" />
+          <!-- Background Accent -->
+          <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-500/10 to-transparent rounded-full blur-2xl group-hover:from-primary-500/20 transition-all duration-300"></div>
+
+          <!-- Icon -->
+          <div class="relative mb-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <FireIcon class="w-7 h-7 text-white" />
+            </div>
           </div>
-          <div class="font-semibold text-gray-900 dark:text-white mb-2 pr-8">{{ template.name }}</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-            <RectangleStackIcon class="w-4 h-4" />
-            {{ template.exercises.length }} exercises
+
+          <!-- Template Name -->
+          <h3 class="relative text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+            {{ template.name }}
+          </h3>
+
+          <!-- Exercise Count -->
+          <div class="relative flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
+            <RectangleStackIcon class="w-5 h-5 text-primary-500" />
+            <span>{{ template.exercises.length }} exercises</span>
+          </div>
+
+          <!-- Exercise Preview -->
+          <div class="relative space-y-1.5">
+            <div
+              v-for="(exercise, idx) in template.exercises.slice(0, 3)"
+              :key="idx"
+              class="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg px-3 py-2 group-hover:bg-primary-50 dark:group-hover:bg-primary-950/30 transition-colors"
+            >
+              <div class="w-1.5 h-1.5 rounded-full bg-primary-500"></div>
+              <span class="font-medium">{{ exercise.name }}</span>
+              <span class="ml-auto text-gray-500 dark:text-gray-500">{{ exercise.sets }}×{{ exercise.reps }}</span>
+            </div>
+            <div
+              v-if="template.exercises.length > 3"
+              class="text-xs text-gray-500 dark:text-gray-500 text-center py-1 font-medium"
+            >
+              +{{ template.exercises.length - 3 }} more
+            </div>
+          </div>
+
+          <!-- Hover Action Indicator -->
+          <div class="relative mt-4 flex items-center gap-2 text-sm font-semibold text-primary-600 dark:text-primary-400 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span>Start Workout</span>
+            <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
           </div>
         </button>
       </div>
 
       <!-- Empty State -->
-      <div v-else class="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-xl">
-        <p class="text-gray-600 dark:text-gray-400">No templates available</p>
+      <div v-else class="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700">
+        <RectangleStackIcon class="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+        <p class="text-gray-600 dark:text-gray-400 font-medium">No templates available</p>
       </div>
     </div>
 

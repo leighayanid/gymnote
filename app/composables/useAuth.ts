@@ -108,6 +108,12 @@ export const useAuth = () => {
    * Initialize auth state from IndexedDB (offline-first)
    */
   const init = async () => {
+    // Skip initialization on server-side
+    if (typeof window === 'undefined') {
+      isLoading.value = false
+      return
+    }
+
     try {
       // First, try to load user from IndexedDB (works offline)
       const cachedUser = await authDB.getUser()
@@ -131,7 +137,9 @@ export const useAuth = () => {
    */
   const fetchCurrentUser = async () => {
     try {
-      const response = await $fetch<{ user: User }>('/api/auth/me')
+      const response = await $fetch<{ user: User }>('/api/auth/me', {
+        credentials: 'include', // Important: include cookies in the request
+      })
       user.value = response.user
       await authDB.setUser(response.user)
     } catch (error: any) {
@@ -151,6 +159,7 @@ export const useAuth = () => {
       const response = await $fetch<{ user: User }>('/api/auth/login', {
         method: 'POST',
         body: { email, password },
+        credentials: 'include', // Important: include cookies in the request
       })
 
       user.value = response.user
@@ -171,6 +180,7 @@ export const useAuth = () => {
       const response = await $fetch<{ user: User }>('/api/auth/signup', {
         method: 'POST',
         body: { name, email, password },
+        credentials: 'include', // Important: include cookies in the request
       })
 
       user.value = response.user
@@ -190,6 +200,7 @@ export const useAuth = () => {
     try {
       await $fetch('/api/auth/logout', {
         method: 'POST',
+        credentials: 'include', // Important: include cookies in the request
       })
     } catch (error) {
       console.error('Logout error:', error)
