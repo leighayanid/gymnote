@@ -7,6 +7,56 @@ export const useSync = () => {
   const lastSyncTime = useState<Date | null>('lastSyncTime', () => null)
   const toast = useToast()
 
+  // Helper function that handles API calls with automatic token refresh on 401
+  const authenticatedFetch = async <T>(
+    url: string,
+    options: { method: string; body?: any }
+  ): Promise<T> => {
+    const { getAccessToken, refreshAccessToken } = useAuth()
+    let token = getAccessToken()
+
+    if (!token) {
+      // Try to refresh the token first
+      const refreshed = await refreshAccessToken()
+      if (!refreshed) {
+        throw new Error('No access token available and refresh failed')
+      }
+      token = getAccessToken()
+    }
+
+    try {
+      const response = await $fetch<T>(url, {
+        method: options.method,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: options.body
+      })
+      return response
+    } catch (error: any) {
+      // Check if it's a 401 error (token expired)
+      if (error?.response?.status === 401 || error?.statusCode === 401) {
+        // Try to refresh the token
+        const refreshed = await refreshAccessToken()
+        if (!refreshed) {
+          throw new Error('Token expired and refresh failed')
+        }
+
+        // Get the new token and retry the request
+        const newToken = getAccessToken()
+        const response = await $fetch<T>(url, {
+          method: options.method,
+          headers: {
+            'Authorization': `Bearer ${newToken}`
+          },
+          body: options.body
+        })
+        return response
+      }
+      throw error
+    }
+  }
+
   const addToSyncQueue = async (item: SyncQueueItem) => {
     await localDB.init()
     await localDB.addToSyncQueue(item)
@@ -92,6 +142,25 @@ export const useSync = () => {
 
   const syncCreateWorkout = async (item: SyncQueueItem) => {
     const workout = item.data
+<<<<<<< HEAD:composables/useSync.ts
+
+    // Send to server with automatic token refresh
+    const response = await authenticatedFetch<{ id: string; exercises?: Array<{ id: string }> }>(
+      '/api/workouts',
+      {
+        method: 'POST',
+        body: {
+          date: workout.date,
+          notes: workout.notes,
+          exercises: workout.exercises.map((e: any) => ({
+            name: e.name,
+            sets: e.sets,
+            reps: e.reps,
+            weight: e.weight,
+            notes: e.notes
+          }))
+        }
+=======
     // Send to server
     const response = await $fetch('/api/workouts', {
       method: 'POST',
@@ -107,17 +176,27 @@ export const useSync = () => {
           weight: e.weight,
           notes: e.notes
         }))
+>>>>>>> main:app/composables/useSync.ts
       }
-    })
+    )
 
     // Update local record with serverId
     const localWorkout = await localDB.getWorkout(workout.localId)
     if (localWorkout) {
-      localWorkout.serverId = (response as any).id
+      localWorkout.serverId = response.id
       localWorkout.syncStatus = 'synced'
       await localDB.saveWorkout(localWorkout)
 
       // Update exercises with serverIds if provided
+<<<<<<< HEAD:composables/useSync.ts
+      if (response.exercises && response.exercises.length > 0) {
+        const localExercises = await localDB.getExercisesByWorkout(workout.localId)
+        for (let i = 0; i < localExercises.length && i < response.exercises.length; i++) {
+          const localExercise = localExercises[i]
+          if (localExercise && response.exercises[i]) {
+            localExercise.serverId = response.exercises[i].id
+            await localDB.saveExercise(localExercise)
+=======
       if ((response as any).exercises) {
         const localExercises = await localDB.getExercisesByWorkout(workout.localId)
         for (let i = 0; i < workout.exercises.length; i++) {
@@ -125,6 +204,7 @@ export const useSync = () => {
           if (match && (response as any).exercises[i]) {
             match.serverId = (response as any).exercises[i].id
             await localDB.saveExercise(match)
+>>>>>>> main:app/composables/useSync.ts
           }
         }
       }
@@ -139,10 +219,16 @@ export const useSync = () => {
       return syncCreateWorkout(item)
     }
 
+<<<<<<< HEAD:composables/useSync.ts
+    // Send to server with automatic token refresh
+    await authenticatedFetch(`/api/workouts/${workout.serverId}`, {
+      method: 'PUT',
+=======
     // Send to server
     await $fetch(`/api/workouts/${workout.serverId}`, {
       method: 'PUT',
       credentials: 'include',
+>>>>>>> main:app/composables/useSync.ts
       body: {
         date: new Date(workout.date).toISOString(),
         notes: workout.notes,
@@ -169,9 +255,15 @@ export const useSync = () => {
     const { serverId } = item.data
 
     if (serverId) {
+<<<<<<< HEAD:composables/useSync.ts
+      // Delete from server with automatic token refresh
+      await authenticatedFetch(`/api/workouts/${serverId}`, {
+        method: 'DELETE'
+=======
       await $fetch(`/api/workouts/${serverId}`, {
         method: 'DELETE',
         credentials: 'include',
+>>>>>>> main:app/composables/useSync.ts
       })
     }
   }
