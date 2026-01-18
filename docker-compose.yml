@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ryne-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ryne
+      POSTGRES_PASSWORD: ryne_password
+      POSTGRES_DB: ryne
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ryne -d ryne"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ryne-app
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://ryne:ryne_password@postgres:5432/ryne
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npm run dev
+
+volumes:
+  postgres_data:
