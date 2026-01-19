@@ -9,7 +9,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <LocalDbProvider>
       <div className="flex min-h-screen flex-col bg-background">
         <OfflineIndicator />
-        <main className="flex-1 pb-20">{children}</main>
+        <main className="flex-1 pb-24">
+          <div className="animate-fade-in-up" style={{ animationDuration: "0.4s" }}>
+            {children}
+          </div>
+        </main>
         <MobileNav />
         <InstallPrompt />
         <Toaster position="top-center" />
