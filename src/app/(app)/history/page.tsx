@@ -318,19 +318,22 @@ function WorkoutDetailDialog({
   return (
     <Dialog open={!!workoutId} onOpenChange={onClose}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-black">
+            {!workout ? (
+              <Skeleton className="h-6 w-48" />
+            ) : (
+              workout.name || formatDate(workout.startedAt)
+            )}
+          </DialogTitle>
+        </DialogHeader>
         {!workout ? (
           <div className="space-y-4 py-4">
-            <Skeleton className="h-6 w-48" />
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-32" />
           </div>
         ) : (
           <>
-            <DialogHeader>
-              <DialogTitle className="text-xl font-black">
-                {workout.name || formatDate(workout.startedAt)}
-              </DialogTitle>
-            </DialogHeader>
 
             <div className="space-y-6 py-4">
               {/* Workout Info Cards */}
